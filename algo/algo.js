@@ -12,51 +12,71 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
     const raw = event.target.result;
     const original = parseCsv(raw);
 
-    // Existing Top-N optimizations using peak reductions
-    const targeted = optimizeTop3ForEllevio(original);
-    const top5 = optimizeTop5ForEllevio(original);
-    const top7 = optimizeTop7ForEllevio(original);
-
-    // Linear (weighted) redistribution optimization
-    const flattened = flattenForEllevio(original);
-
-    // Updated Peak Shaving using a sliding window with adjustable parameters:
-    const peakShaved = peakShavingSlidingWindow(original, 5, 1.1);
-
-    // Updated Valley Filling: Iteratively transfers energy from current global peaks into valleys.
-    const valleyFilled = valleyFilling(original, 0.2);
-
-    // -------------------------
-    // New Optimization Methods
-    // -------------------------
-    // Daily Redistribution: Balances consumption within each day.
-    const dailyRedistributed = dailyRedistribution(original);
+    // raw‐consumption as “adjusted” so we can run it through the same display fn:
+    const rawAsAdjustedGE = original.map(({ timestamp, consumption }) => ({
+      timestamp,
+      adjusted: consumption
+    }));
 
 
-    // Consumption Smoothing: Nudges consumption values toward a moving-average baseline.
-    const smoothed = consumptionSmoothing(original, 5, 0.1); // 5-sample window; 10% nudge
+    // --- Ellevio variants ---
+    const targeted            = optimizeTop3ForEllevio(original);
+    const top5                = optimizeTop5ForEllevio(original);
+    const top7                = optimizeTop7ForEllevio(original);
+    const flattened           = flattenForEllevio(original);
+    const peakShaved          = peakShavingSlidingWindow(original, 5, 1.1);
+    const valleyFilled        = valleyFilling(original, 0.2);
+    const dailyRedistributed  = dailyRedistribution(original);
+    const smoothed            = consumptionSmoothing(original, 5, 0.1);
 
-    // Apply the Ellevio night rule to all variants (night hours count as half)
-    const adjustedOriginal = applyEllevioRule(original);
-    const adjustedTargeted = applyEllevioRule(targeted);
-    const adjustedTop5 = applyEllevioRule(top5);
-    const adjustedTop7 = applyEllevioRule(top7);
-    const adjustedFlattened = applyEllevioRule(flattened);
-    const adjustedPeakShaved = applyEllevioRule(peakShaved);
-    const adjustedValleyFilled = applyEllevioRule(valleyFilled);
-    const adjustedDailyRedistributed = applyEllevioRule(dailyRedistributed);
-    const adjustedSmoothed = applyEllevioRule(smoothed);
+    const adjustedOriginal            = applyEllevioRule(original);
+    const adjustedTargeted            = applyEllevioRule(targeted);
+    const adjustedTop5                = applyEllevioRule(top5);
+    const adjustedTop7                = applyEllevioRule(top7);
+    const adjustedFlattened           = applyEllevioRule(flattened);
+    const adjustedPeakShaved          = applyEllevioRule(peakShaved);
+    const adjustedValleyFilled        = applyEllevioRule(valleyFilled);
+    const adjustedDailyRedistributed  = applyEllevioRule(dailyRedistributed);
+    const adjustedSmoothed            = applyEllevioRule(smoothed);
+    // --- Göteborgs Energi variants ---
+    const geTop3 = optimizeTop3ForGoteborgs(original);
+    const geTop5 = optimizeTop5ForGoteborgs(original);
+    const geTop7 = optimizeTop7ForGoteborgs(original);
+    const gePeak   = peakShavingForGoteborgs(original, 5, 1.1);
+    const geValley = valleyFillingForGoteborgs(original, 0.2);
+    const geDaily  = dailyRedistributionForGoteborgs(original);
+    const geSmooth = consumptionSmoothingForGoteborgs(original, 5, 0.1);
 
+    const adjGeOrig   = applyGoteborgsRule(original);
+    const adjGeTop3   = applyGoteborgsRule(geTop3);
+    const adjGeTop5   = applyGoteborgsRule(geTop5);
+    const adjGeTop7   = applyGoteborgsRule(geTop7);
+    const adjGePeak   = applyGoteborgsRule(gePeak);
+    const adjGeValley = applyGoteborgsRule(geValley);
+    const adjGeDaily  = applyGoteborgsRule(geDaily);
+    const adjGeSmooth = applyGoteborgsRule(geSmooth);
+  
     displayAllSummaries(
-      adjustedOriginal, original,
-      adjustedTargeted, targeted,
-      adjustedTop5, top5,
-      adjustedTop7, top7,
-      adjustedFlattened, flattened,
-      adjustedPeakShaved, peakShaved,
-      adjustedValleyFilled, valleyFilled,
-      adjustedDailyRedistributed, dailyRedistributed,
-      adjustedSmoothed, smoothed
+      // Ellevio (9)
+      adjustedOriginal,            original,
+      adjustedTargeted,            targeted,
+      adjustedTop5,                top5,
+      adjustedTop7,                top7,
+      adjustedPeakShaved,          peakShaved,
+      adjustedValleyFilled,        valleyFilled,
+      adjustedDailyRedistributed,  dailyRedistributed,
+      adjustedSmoothed,            smoothed,
+
+      // GE före optimering 
+      rawAsAdjustedGE, original,
+
+      adjGeTop3,   geTop3,
+      adjGeTop5,   geTop5,
+      adjGeTop7,   geTop7,
+      adjGePeak,   gePeak,
+      adjGeValley, geValley,
+      adjGeDaily,  geDaily,
+      adjGeSmooth, geSmooth
     );
   };
   reader.readAsText(file);
@@ -324,44 +344,143 @@ function consumptionSmoothing(data, windowSize = 5, nudgeFactor = 0.1) {
   return cloned;
 }
 
-// -------------------------
+
 // Display Summaries for All Optimizations
 //
 // This function prints a summary for each method including total consumption,
 // the top 3 adjusted (Ellevio rule applied) values, the average of the top 3, and the computed fee.
 // -------------------------
-function displayAllSummaries(...entries) {
-  const format = v => v.toFixed(2).replace('.', ',');
+function applyGoteborgsRule(data) {
+  return data.map(({timestamp,consumption})=>({ timestamp, adjusted: consumption }));
+}
 
+function optimizeTopNForGoteborgs(data, topN) {
+  const c = data.map(e=>({ ...e }));
+  const peaks = [...c].sort((a,b)=>b.consumption - a.consumption).slice(0,topN);
+  peaks.forEach(p=>{
+    const i = c.findIndex(e=>e.timestamp.getTime()===p.timestamp.getTime());
+    let move = c[i].consumption * 0.5;
+    const targ = [...c].sort((a,b)=>a.consumption - b.consumption);
+    targ.forEach(t=>{
+      if (!move) return;
+      const space = 10 - t.consumption;
+      const m     = Math.min(space, move);
+      if (m>0){
+        t.consumption    += m;
+        c[i].consumption -= m;
+        move            -= m;
+      }
+    });
+  });
+  return c;
+}
+const optimizeTop3ForGoteborgs = d=>optimizeTopNForGoteborgs(d,3);
+const optimizeTop5ForGoteborgs = d=>optimizeTopNForGoteborgs(d,5);
+const optimizeTop7ForGoteborgs = d=>optimizeTopNForGoteborgs(d,7);
+
+function flattenForGoteborgs(data) {
+  const total = data.reduce((s,e)=>s+e.consumption,0);
+  const per   = total/data.length;
+  return data.map(e=>({ timestamp: e.timestamp, consumption: per }));
+}
+
+function peakShavingForGoteborgs(data, windowSize=5, thresholdFactor=1.1) {
+  const c    = data.map(e=>({ ...e }));
+  const half = Math.floor(windowSize/2);
+  for (let i=half;i<c.length-half;i++){
+    let sum=0,ct=0;
+    for (let j=i-half;j<=i+half;j++){
+      if(j===i)continue;
+      sum+=c[j].consumption;ct++;
+    }
+    const avg=sum/ct;
+    if(c[i].consumption>avg*thresholdFactor){
+      const reduce=(c[i].consumption-avg)*0.5;
+      c[i].consumption-=reduce;
+      const per=reduce/ct;
+      for(let j=i-half;j<=i+half;j++){
+        if(j===i)continue;
+        c[j].consumption+=per;
+      }
+    }
+  }
+  return c;
+}
+
+function valleyFillingForGoteborgs(data, transferFactor=0.2) {
+  const c = data.map(e=>({ ...e }));
+  const valleys = c.slice().sort((a,b)=>a.consumption-b.consumption);
+  valleys.forEach(v=>{
+    let iter=0;
+    while(iter<50){
+      const peak=c.reduce((m,e)=>e.consumption>m.consumption?e:m,c[0]);
+      if(peak.consumption<=v.consumption)break;
+      const amt=Math.min(peak.consumption*transferFactor,10-v.consumption);
+      if(amt<=0)break;
+      v.consumption    += amt;
+      peak.consumption -= amt;
+      iter++;
+    }
+  });
+  return c;
+}
+
+const dailyRedistributionForGoteborgs  = dailyRedistribution;
+const consumptionSmoothingForGoteborgs = consumptionSmoothing;
+
+// -------------------------
+// Unified Display
+// -------------------------
+function displayAllSummaries(...entries) {
+  const fmt = v => v.toFixed(2).replace('.', ',');
   const labels = [
+    // Ellevio (65 kr)
     "FÖRE OPTIMERING",
     "EFTER OPTIMERING (TOPP 3 REDUKTION)",
     "EFTER OPTIMERING (TOPP 5 REDUKTION)",
     "EFTER OPTIMERING (TOPP 7 REDUKTION)",
-    "EFTER OPTIMERING (LINJÄR FÖRDELNING)",
     "EFTER OPTIMERING (PEAK SHAVING)",
     "EFTER OPTIMERING (VALLEY FILLING)",
     "EFTER OPTIMERING (DAGLIG OMBALANSERING)",
     "EFTER OPTIMERING (SMOOTHING)",
+    // GE (45 kr)
+    "GE - FÖRE OPTIMERING",
+    "GE - EFTER OPTIMERING (TOPP 3 REDUKTION)",
+    "GE - EFTER OPTIMERING (TOPP 5 REDUKTION)",
+    "GE - EFTER OPTIMERING (TOPP 7 REDUKTION)",
+    "GE - EFTER OPTIMERING (PEAK SHAVING)",
+    "GE - EFTER OPTIMERING (VALLEY FILLING)",
+    "GE - EFTER OPTIMERING (DAGLIG OMBALANSERING)",
+    "GE - EFTER OPTIMERING (SMOOTHING)"
   ];
+  const rates = [...Array(8).fill(65), ...Array(8).fill(45)];
 
-  let output = "";
+  let out = "";
   for (let i = 0; i < entries.length; i += 2) {
+    const idx      = i/2;
     const adjusted = entries[i];
-    const raw = entries[i + 1];
-    // Sort by adjusted consumption in descending order.
-    const sorted = [...adjusted].sort((a, b) => b.adjusted - a.adjusted);
-    const top3 = sorted.slice(0, 3);
-    const avg = top3.reduce((sum, x) => sum + x.adjusted, 0) / 3;
-    const fee = avg * 65; // Assuming fee is computed as average adjusted (kW) times 65.
-    const total = raw.reduce((sum, x) => sum + x.consumption, 0);
+    const raw      = entries[i+1];
+    const rate     = rates[idx];
 
-    output += `${labels[i / 2]}\n`;
-    output += `Total förbrukning: ${format(total)} kWh\n`;
-    output += `Topp 3 justerade: ${top3.map(e => format(e.adjusted)).join(', ')}\n`;
-    output += `Medeltopp: ${format(avg)} kW\n`;
-    output += `Effektavgift: ${format(fee)} kr\n\n`;
+    const total = raw.reduce((s,x)=>s+x.consumption,0);
+
+    const top3 = [...adjusted]
+      .sort((a,b)=>b.adjusted - a.adjusted)
+      .slice(0,3)
+      .map(e=>fmt(e.adjusted));
+
+    const avg = top3
+      .map(v=>parseFloat(v.replace(',','.')))
+      .reduce((s,n)=>s+n,0)/3;
+
+    const fee = avg * rate;
+
+    out += `${labels[idx]}\n`;
+    out += `  Total förbrukning: ${fmt(total)} kWh\n`;
+    out += `  Topp 3: ${top3.join(', ')}\n`;
+    out += `  Medeltopp: ${fmt(avg)} kW\n`;
+    out += `  Effektavgift: ${fmt(fee)} kr\n\n`;
   }
 
-  document.getElementById("output").textContent = output;
+  document.getElementById("output").textContent = out;
 }
