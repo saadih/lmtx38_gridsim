@@ -1,5 +1,11 @@
 import React from "react";
-import { calculateEnergyMetrics, EnergyData, optimizeTopNPeaks } from "../utils/energyCalculations";
+import { 
+  calculateEnergyMetrics, 
+  calculateGeMetrics,
+  EnergyData, 
+  optimizeTopNPeaks,
+  optimizeTopNPeaksGE
+} from "../utils/energyCalculations";
 
 interface EnergyMetrics {
   totalUsage: number;
@@ -11,9 +17,17 @@ interface EnergyMetrics {
   originalPowerFee?: number;
 }
 
-const Result: React.FC<{ data: EnergyData[] }> = ({ data }) => {
-  const optimizedData = optimizeTopNPeaks(data);
-  const metrics: EnergyMetrics = {
+interface ResultProps {
+   data: EnergyData[];
+   provider: "Ellevio" | "GE";
+ }
+
+const Result: React.FC<ResultProps> = ({ data, provider }) => {
+  const optimizedData = 
+  provider === "GE" ? optimizeTopNPeaksGE(data) : optimizeTopNPeaks(data);
+
+  const metrics: EnergyMetrics = provider === "GE" ?
+    calculateGeMetrics(data) :{
     ...calculateEnergyMetrics(data),
     originalTop3Peaks: [...data]
       .sort((a, b) => b.usage - a.usage)

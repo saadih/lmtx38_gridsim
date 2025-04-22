@@ -108,3 +108,63 @@ export function parseEnergyData(rawData: { timestamp: string; usage: number }[])
     usage: entry.usage
   }));
 }
+
+// Functions for Göteborgs Energi (GE) calculations
+export function optimizeTopNPeaksGE(
+  data: EnergyData[],
+  topN: number = 3
+): EnergyData[] {
+  const cloned = data.map(e => ({ ...e }));
+
+  // pick the N largest raw peaks
+  const peaks = [...cloned]
+    .sort((a, b) => b.usage - a.usage)
+    .slice(0, topN);
+
+  peaks.forEach(peak => {
+    const idx     = cloned.findIndex(e =>
+      e.timestamp.getTime() === peak.timestamp.getTime()
+    );
+    let toShift   = cloned[idx].usage * 0.5;        // shift 50 %
+    const targets = [...cloned].sort((a, b) => a.usage - b.usage);
+
+    for (const slot of targets) {
+      if (toShift <= 0) break;
+      const room = 10 - slot.usage;                 // 10 kWh cap per slot
+      if (room <= 0) continue;
+      const moved = Math.min(room, toShift);
+      slot.usage        += moved;
+      cloned[idx].usage -= moved;
+      toShift           -= moved;
+    }
+  });
+
+  return cloned;   // <-- ALWAYS RETURN AN ARRAY
+}
+
+// 2.  Fee:  average of top‑3 * 45 kr/kW
+export function calculateGeMetrics(data: EnergyData[]) {
+  const optimised   = optimizeTopNPeaksGE(data);
+  const totalUsage  = data.reduce((s, e) => s + e.usage, 0);
+
+  const top3        = [...optimised]
+    .sort((a, b) => b.usage - a.usage)
+    .slice(0, 3)
+    .map(e => e.usage);
+
+  const averageTop3 = top3.reduce((s, v) => s + v, 0) / 3;
+  const powerFee    = averageTop3 * 45;             // GE tariff
+
+  return {
+    totalUsage,
+    top3Peaks        : top3,
+    averageTop3,
+    powerFee,
+    originalTop3Peaks: [...data]
+      .sort((a, b) => b.usage - a.usage)
+      .slice(0, 3)
+      .map(e => e.usage),
+    originalAverageTop3: averageTop3,               // GE has no night rule
+    originalPowerFee   : averageTop3 * 45
+  };
+}

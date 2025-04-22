@@ -3,7 +3,15 @@ import * as Papa from "papaparse";
 import Result from "./Result";
 import { parseEnergyData, EnergyData } from "../utils/energyCalculations";
 
+import { Dropdown } from "../components/Dropdown";
+
 const Home: React.FC = () => {
+
+  // Dropdown for selecting energy provider
+  type Provider = "Ellevio" | "GE" ;
+  const [provider, setProvider] = useState<Provider>("Ellevio");
+
+  // Other states
   const [dataRows, setDataRows] = useState<EnergyData[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +83,19 @@ const Home: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Energi Kalkylator</h1>
         <p className="text-gray-600">Ladda upp din energidata i CSV-format</p>
       </header>
+
+      <div className="bg-white rounded-lg shadow-md p-6">
+      {/* Dropdown for selecting provider */}
+      <div className="mb-6 flex justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Välj leverantör
+        </label>
+        <Dropdown
+          options={["Ellevio", "GE"]}
+          value={provider}
+          onChange={(v) => setProvider(v as Provider)}
+        />
+      </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col items-center">
@@ -149,9 +170,13 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         )}
-
-        {showResult && !isLoading && <Result data={dataRows} />}
+        {/* Result table */}
+        {showResult && !isLoading && (
+          
+        <Result data={dataRows} provider={provider} />
+      )}
       </div>
+    </div>
     </div>
   );
 };
