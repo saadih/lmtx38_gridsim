@@ -41,7 +41,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
     provider === "GE"
       ? calculateGeMetrics(optimizedData)
       : {
-          ...calculateEnergyMetrics(adjustedData),
+          ...calculateEnergyMetrics(data, adjustedData),
           originalTop3Peaks: [...data]
             .sort((a, b) => b.usage - a.usage)
             .slice(0, 3)
@@ -114,7 +114,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
                 ))}
               </ul>
             }
-            description="* 50% av topparna har flyttats till natttimmar"
+            description="* 50% av topparna har flyttats till natttimmar enligt Ellevio"
           />
         </div>
 
@@ -180,15 +180,22 @@ const MetricCard: React.FC<{
   <div className={`p-4 rounded-lg border ${highlight ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
     <h3 className="text-sm font-medium text-gray-600">{title}</h3>
     <div className={`mt-1 text-2xl ${highlight ? 'font-bold text-blue-600' : 'font-semibold text-gray-800'}`}>{value}</div>
-    {changePercentage && <div className={`mt-1 text-sm ${changePercentage.startsWith('-') ? 'text-green-600' : 'text-red-600'}`}>{changePercentage.startsWith('-') ? 'Besparing ' : 'Ökning '}{changePercentage}</div>}
+	{changePercentage && (
+  <div className={`mt-1 text-sm ${parseFloat(changePercentage) < 0 ? 'text-green-600' : 'text-red-600'}`}>
+    {parseFloat(changePercentage) < 0 ? 'Besparing ' : 'Ökning '}
+    {changePercentage.replace('-', '')}
+  </div>
+)}
     {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
   </div>
 );
 
 function calculateChangePercentage(original: number, optimized: number): string {
-  const change = ((optimized - original) / original) * 100;
-  return `${Math.abs(change).toFixed(1)}%`;
+	if (original === 0) return "0%";
+	const change = ((optimized - original) / original) * 100;
+	return `${change.toFixed(1)}%`;
 }
+  
 
 function calculateOriginalAverageTop3(data: EnergyData[]): number {
   const top3 = [...data].sort((a, b) => b.usage - a.usage).slice(0, 3).map(e => e.usage);

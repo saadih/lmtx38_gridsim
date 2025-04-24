@@ -16,7 +16,7 @@ const Home: React.FC = () => {
   const [showResult, setShowResult] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-	
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -80,7 +80,7 @@ const Home: React.FC = () => {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <header className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Energi Kalkylator</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Energibesparnings Kalkylator</h1>
         <p className="text-gray-600">Ladda upp din energidata i CSV-format</p>
       </header>
 

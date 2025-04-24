@@ -51,6 +51,7 @@ export function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyD
 	  ...entry,
 	  consumption: entry.usage }));
 	
+	console.log("original data sum", data.reduce((sum, e) => sum + e.usage, 0))
 	console.log("▶️ Cloned original data:", cloned.slice(0, 5));
   
 	// 2) Create adjusted values for peak detection
@@ -111,13 +112,12 @@ export function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyD
  * Beräknar total förbrukning, topp3, medeltopp och effektavgift (65 öre/kWh)
  * utifrån redan optimerad data.
  */
-export function calculateEnergyMetrics(data: EnergyData[]) {
-	console.log(data)
-	const totalUsage = data.reduce((sum, e) => sum + e.usage, 0);
+export function calculateEnergyMetrics(oldData: EnergyData[] , data: EnergyData[]) {
+	const totalUsage = oldData.reduce((sum, e) => sum + e.usage, 0);
 	const sorted = [...data].sort((a, b) => b.usage - a.usage);
 	const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);
 	const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
-	const powerFee = totalUsage * 0.65; // 0.65 SEK/kWh
+	const powerFee = averageTop3 * 65; // 0.65 SEK/kWh
 	return { totalUsage, top3Peaks, averageTop3, powerFee };
   }
   
@@ -159,6 +159,7 @@ export function calculateEnergyMetrics(data: EnergyData[]) {
    * utifrån redan optimerad data.
    */
   export function calculateGeMetrics(data: EnergyData[]) {
+	console.log(data)
 	const totalUsage = data.reduce((sum, e) => sum + e.usage, 0);
 	const sorted = [...data].sort((a, b) => b.usage - a.usage);
 	const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);

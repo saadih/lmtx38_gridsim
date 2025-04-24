@@ -484,7 +484,7 @@ function displayAllSummaries(...entries) {
       .slice(0,3)
       .map(e=>fmt(e.adjusted));
 
-	  console.log(labels[idx],[...adjusted].sort((a,b)=>b.adjusted - a.adjusted));
+	  console.log(labels[idx],adjusted);
     const avg = top3
       .map(v=>parseFloat(v.replace(',','.')))
       .reduce((s,n)=>s+n,0)/3;
