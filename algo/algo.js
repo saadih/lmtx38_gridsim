@@ -120,41 +120,56 @@ function applyEllevioRule(data) {
 // Method 1: Top-N Optimization: Reduce peaks by shifting energy from the top N entries.
 // -------------------------
 function optimizeTopNForEllevio(data, topN) {
-  const cloned = data.map(entry => ({ ...entry }));
-  const adjusted = applyEllevioRule(cloned).map((entry, i) => ({
-    ...cloned[i],
-    adjusted: entry.adjusted,
-  }));
+	const cloned = data.map(entry => ({ ...entry }));
+	console.log("▶️ Cloned original data:", cloned.slice(0, 5)); // Log cloned data
+  
+	const adjusted = applyEllevioRule(cloned).map((entry, i) => ({
+	  ...cloned[i],
+	  adjusted: entry.adjusted,
+	}));
+	console.log("▶️ Adjusted data with Ellevio rule applied:", adjusted.slice(0, 5)); // Log adjusted data
+  
+	// Pick the topN peaks by adjusted consumption.
+	const topNPeaks = [...adjusted]
+		.sort((a, b) => b.adjusted - a.adjusted)
+		.slice(0, topN);
 
-  // Pick the topN peaks by adjusted consumption.
-  const topNPeaks = [...adjusted].sort((a, b) => b.adjusted - a.adjusted).slice(0, topN);
+	console.log("▶️ Top N peaks by adjusted consumption:", topNPeaks.map(p => p.adjusted)); // Log topN peaks
+  
+	topNPeaks.forEach(peak => {
+	  const peakIndex = cloned.findIndex(e => e.timestamp.getTime() === peak.timestamp.getTime());
+	  const originalEntry = cloned[peakIndex];
 
-  topNPeaks.forEach(peak => {
-    const peakIndex = cloned.findIndex(e => e.timestamp.getTime() === peak.timestamp.getTime());
-    const originalEntry = cloned[peakIndex];
-    let amountToMove = originalEntry.consumption * 0.5; // Reduce 50% of peak consumption
+	  let amountToMove = originalEntry.consumption * 0.5; // Reduce 50% of peak consumption
+	  console.log(`▶️ Amount to move for peak at ${originalEntry.timestamp}:`, amountToMove);
+  
+	  // Identify candidates in night hours sorted by low consumption.
+	  const nightTargets = cloned
+		.filter(e => NIGHT_HOURS.includes(e.timestamp.getHours()))
+		.sort((a, b) => a.consumption - b.consumption);
+		
+	  console.log("▶️ Night target candidates:", nightTargets.slice(0, 5)); // Log night target candidates
+  
+	  for (let target of nightTargets) {
+		if (amountToMove <= 0) break;
+		const space = 10 - target.consumption; // assume a max capacity per slot of 10 kWh.
+		if (space <= 0) continue;
 
-    // Identify candidates in night hours sorted by low consumption.
-    const nightTargets = cloned
-      .filter(e => NIGHT_HOURS.includes(e.timestamp.getHours()))
-      .sort((a, b) => a.consumption - b.consumption);
-
-    for (let target of nightTargets) {
-      if (amountToMove <= 0) break;
-      const space = 10 - target.consumption; // assume a max capacity per slot of 10 kWh.
-      if (space <= 0) continue;
-      const move = Math.min(space, amountToMove);
-      target.consumption += move;
-      originalEntry.consumption -= move;
-      amountToMove -= move;
-    }
-  });
-
-  return cloned;
-}
+		const move = Math.min(space, amountToMove);
+		target.consumption += move;
+		originalEntry.consumption -= move;
+		amountToMove -= move;
+		console.log(`▶️ Moving ${move} from peak to target at ${target.timestamp}`);
+	  }
+	});
+  
+	console.log("▶️ Final optimized data (after adjustments):", cloned.slice(0, 5)); // Log final data
+	return cloned;
+  }
+  
 function optimizeTop3ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
-function optimizeTop5ForEllevio(data) { return optimizeTopNForEllevio(data, 5); }
-function optimizeTop7ForEllevio(data) { return optimizeTopNForEllevio(data, 7); }
+function optimizeTop5ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
+function optimizeTop7ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
 
 // -------------------------
 // Method 2: Flattening (Linear Redistribution)
@@ -469,6 +484,7 @@ function displayAllSummaries(...entries) {
       .slice(0,3)
       .map(e=>fmt(e.adjusted));
 
+	  console.log(labels[idx],[...adjusted].sort((a,b)=>b.adjusted - a.adjusted));
     const avg = top3
       .map(v=>parseFloat(v.replace(',','.')))
       .reduce((s,n)=>s+n,0)/3;

@@ -1,170 +1,168 @@
-// energyCalculations.ts
-
-const NIGHT_HOURS = [22, 23, 0, 1, 2, 3, 4, 5];
+export const NIGHT_HOURS = [22, 23, 0, 1, 2, 3, 4, 5];
 
 export interface EnergyData {
   timestamp: Date;
-  usage: number; // kWh
-}
-
-// Helper to check if a date is during night hours
-function isNightTime(timestamp: Date): boolean {
-  const hour = timestamp.getHours();
-  return NIGHT_HOURS.includes(hour);
+  usage: number;
 }
 
 /**
- * Applies Ellevio's night time rule (night hours count as half consumption for fee calculation)
+ * Parses raw CSV timestamp strings in format D/M/YYYY H:mm or DD/MM/YYYY HH:mm
+ * into valid JavaScript Date objects.
  */
-function applyEllevioRule(data: EnergyData[]): { timestamp: Date; adjustedUsage: number }[] {
-  return data.map(({ timestamp, usage }) => ({
-    timestamp,
-    adjustedUsage: isNightTime(timestamp) ? usage / 2 : usage
-  }));
+export function parseEnergyData(
+  rawData: { timestamp: string; usage: number }[]
+): EnergyData[] {
+  return rawData.map(({ timestamp, usage }) => {
+    const parts = timestamp.trim().split(" ");
+    if (parts.length !== 2) {
+      throw new Error(`Ogiltigt tidsformat, längd är inte av två: ${timestamp}`);
+    }
+    const [datePart, timePart] = parts;
+    const dateElems = datePart.split("-").map(Number);
+    const timeElems = timePart.split(":").map(Number);
+    if (dateElems.length !== 3 || timeElems.length !== 2) {
+      throw new Error(`Ogiltigt tidsformat: ${datePart},${timePart} `);
+    }
+    const [year, month, day] = dateElems;
+    const [hour, minute] = timeElems;
+    const dateObj = new Date(year, month - 1, day, hour, minute);
+    if (isNaN(dateObj.getTime())) {
+      throw new Error(`Kunde inte parsa datum: ${timestamp}`);
+    }
+    return { timestamp: dateObj, usage };
+  });
 }
 
+// Applicera Ellevio nattregel (justerar kWh för effektavgift)
+export function applyEllevioRule(data : EnergyData[] ) {
+	return data.map(({ timestamp, usage }) => {
+	  const hour = timestamp.getHours();
+	  const isNight = NIGHT_HOURS.includes(hour);
+	  const adjusted = isNight ? usage / 2 : usage;
+	  return { timestamp, adjusted };
+	});
+  }
+
 /**
- * Optimizes energy usage by shifting consumption from peak hours to night hours
+ * Skiftar 50% av de topN största förbrukningstopparna till nattimmar med lägst usage.
  */
 export function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyData[] {
-  // Create a deep copy of the data to avoid mutating the original
-  const optimizedData = data.map(entry => ({ ...entry }));
+	const cloned = data.map(entry => ({ 
+	  ...entry,
+	  consumption: entry.usage }));
+	
+	console.log("▶️ Cloned original data:", cloned.slice(0, 5));
   
-  // Get adjusted usage for peak detection
-  const adjustedData = applyEllevioRule(optimizedData);
+	// 2) Create adjusted values for peak detection
+	const adjusted = applyEllevioRule(cloned).map((entry) => ({
+	  ...entry,
+	  adjusted: entry.adjusted
+	}));
+	
+	console.log("▶️ Adjusted data with Ellevio rule applied:", adjusted.slice(0, 5));
   
-  // Find the top N peaks (based on adjusted usage)
-  const topPeaks = [...adjustedData]
-    .sort((a, b) => b.adjustedUsage - a.adjustedUsage)
-    .slice(0, topN);
+	// 3) Get top N peaks
+	const topNPeaks = [...adjusted]
+	  .sort((a, b) => b.adjusted - a.adjusted)
+	  .slice(0, topN);
+	
+	console.log("▶️ Top N peaks by adjusted consumption:", topNPeaks.map(p => p.adjusted));
   
-  // For each peak, shift 50% of consumption to night hours
-  topPeaks.forEach(peak => {
-    const peakEntry = optimizedData.find(e => 
-      e.timestamp.getTime() === peak.timestamp.getTime()
-    )!;
-    
-    let amountToShift = peakEntry.usage * 0.5; // Shift 50% of peak usage
-    
-    // Find available night time slots (sorted by lowest usage first)
-    const nightSlots = optimizedData
-      .filter(e => isNightTime(e.timestamp))
-      .sort((a, b) => a.usage - b.usage);
-    
-    // Distribute the shifted usage to night slots
-    for (const slot of nightSlots) {
-      if (amountToShift <= 0) break;
-      
-      const availableCapacity = 10 - slot.usage; // Assuming 10 kWh max per slot
-      if (availableCapacity <= 0) continue;
-      
-      const shiftAmount = Math.min(availableCapacity, amountToShift);
-      slot.usage += shiftAmount;
-      peakEntry.usage -= shiftAmount;
-      amountToShift -= shiftAmount;
-    }
-  });
+	// 4) Process each peak
+	topNPeaks.forEach(peak => {
+		const peakIndex = cloned.findIndex(e => e.timestamp.getTime() === peak.timestamp.getTime());
+		const originalEntry = cloned[peakIndex]
+	  
+	  let amountToMove = originalEntry.consumption * 0.5;
+	  console.log(`▶️ Amount to move for peak at ${originalEntry.timestamp}:`, amountToMove);
   
-  return optimizedData;
-}
+	  // Get night targets with proper tracking
+	  const nightTargets = cloned
+		.filter(e => NIGHT_HOURS.includes(e.timestamp.getHours()))
+		.sort((a, b) => a.consumption - b.consumption);
+  
+	  console.log("▶️ Night target candidates:", nightTargets.slice(0, 5));
+  
+	  // Transfer energy
+	  for (const target of nightTargets) {
+		if (amountToMove <= 0) break;
+		const space = 10 - target.consumption;
+		if (space <= 0) continue;
+  
+		const move = Math.min(space, amountToMove);
+		target.consumption += move;
+		originalEntry.consumption -= move;
+		amountToMove -= move;
+		console.log(`▶️ Moving ${move} from peak to target at ${target.timestamp}`);
+	  }
+	});
+  
+	console.log("▶️ Final optimized data (after adjustments):", cloned.slice(0, 5));
+	
+	// Convert back to EnergyData format
+	return cloned.map(({ timestamp, consumption }) => ({
+	  timestamp,
+	  usage: consumption
+	}));
+  }
+  
 
 /**
- * Calculates all required energy metrics
+ * Beräknar total förbrukning, topp3, medeltopp och effektavgift (65 öre/kWh)
+ * utifrån redan optimerad data.
  */
-// energyCalculations.ts (updated)
 export function calculateEnergyMetrics(data: EnergyData[]) {
-    // First optimize the data
-    const optimizedData = optimizeTopNPeaks(data);
+	console.log(data)
+	const totalUsage = data.reduce((sum, e) => sum + e.usage, 0);
+	const sorted = [...data].sort((a, b) => b.usage - a.usage);
+	const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);
+	const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
+	const powerFee = totalUsage * 0.65; // 0.65 SEK/kWh
+	return { totalUsage, top3Peaks, averageTop3, powerFee };
+  }
   
-    // 1. Total Consumption remains unchanged (sum of original data)
-    const totalUsage = data.reduce((sum, entry) => sum + entry.usage, 0);
-    
-    // 2. Get top 3 peaks from OPTIMIZED data
-    const top3Peaks = [...optimizedData]
-      .sort((a, b) => b.usage - a.usage)
-      .slice(0, 3)
-      .map(entry => entry.usage);
+  /**
+   * Göteborgs Energi: skiftar 50% av toppN från högsta usage till lägsta usage (inga nattregler).
+   */
+  export function optimizeTopNPeaksGE(
+	data: EnergyData[],
+	topN: number = 3
+  ): EnergyData[] {
+	const optimized = data.map((e) => ({ ...e }));
+	const peaks = optimized
+	  .map((e, i) => ({ index: i, usage: e.usage }))
+	  .sort((a, b) => b.usage - a.usage)
+	  .slice(0, topN);
   
-    // 3. Average of optimized top 3 peaks
-    const averageTop3 = top3Peaks.reduce((sum, val) => sum + val, 0) / 3;
-    
-    // 4. Power fee calculation using optimized and adjusted data
-    const adjustedData = applyEllevioRule(optimizedData);
-    const totalAdjustedUsage = adjustedData.reduce((sum, entry) => sum + entry.adjustedUsage, 0);
-    const powerFee = totalAdjustedUsage * 0.6;
+	peaks.forEach(({ index }) => {
+	  let remaining = optimized[index].usage * 0.5;
+	  const targets = optimized
+		.map((e, i) => ({ index: i, usage: e.usage }))
+		.sort((a, b) => a.usage - b.usage);
   
-    return {
-      totalUsage,
-      top3Peaks,
-      averageTop3,
-      powerFee
-    };
-}
-
-// Utility function to convert string timestamps to Date objects
-export function parseEnergyData(rawData: { timestamp: string; usage: number }[]): EnergyData[] {
-  return rawData.map(entry => ({
-    timestamp: new Date(entry.timestamp),
-    usage: entry.usage
-  }));
-}
-
-// Functions for Göteborgs Energi (GE) calculations
-export function optimizeTopNPeaksGE(
-  data: EnergyData[],
-  topN: number = 3
-): EnergyData[] {
-  const cloned = data.map(e => ({ ...e }));
-
-  // pick the N largest raw peaks
-  const peaks = [...cloned]
-    .sort((a, b) => b.usage - a.usage)
-    .slice(0, topN);
-
-  peaks.forEach(peak => {
-    const idx     = cloned.findIndex(e =>
-      e.timestamp.getTime() === peak.timestamp.getTime()
-    );
-    let toShift   = cloned[idx].usage * 0.5;        // shift 50 %
-    const targets = [...cloned].sort((a, b) => a.usage - b.usage);
-
-    for (const slot of targets) {
-      if (toShift <= 0) break;
-      const room = 10 - slot.usage;                 // 10 kWh cap per slot
-      if (room <= 0) continue;
-      const moved = Math.min(room, toShift);
-      slot.usage        += moved;
-      cloned[idx].usage -= moved;
-      toShift           -= moved;
-    }
-  });
-
-  return cloned;   // <-- ALWAYS RETURN AN ARRAY
-}
-
-// 2.  Fee:  average of top‑3 * 45 kr/kW
-export function calculateGeMetrics(data: EnergyData[]) {
-  const optimised   = optimizeTopNPeaksGE(data);
-  const totalUsage  = data.reduce((s, e) => s + e.usage, 0);
-
-  const top3        = [...optimised]
-    .sort((a, b) => b.usage - a.usage)
-    .slice(0, 3)
-    .map(e => e.usage);
-
-  const averageTop3 = top3.reduce((s, v) => s + v, 0) / 3;
-  const powerFee    = averageTop3 * 45;             // GE tariff
-
-  return {
-    totalUsage,
-    top3Peaks        : top3,
-    averageTop3,
-    powerFee,
-    originalTop3Peaks: [...data]
-      .sort((a, b) => b.usage - a.usage)
-      .slice(0, 3)
-      .map(e => e.usage),
-    originalAverageTop3: averageTop3,               // GE has no night rule
-    originalPowerFee   : averageTop3 * 45
-  };
-}
+	  for (const t of targets) {
+		if (remaining <= 0) break;
+		const space = Math.max(10 - optimized[t.index].usage, 0);
+		if (space <= 0) continue;
+		const move = Math.min(space, remaining);
+		optimized[t.index].usage += move;
+		optimized[index].usage -= move;
+		remaining -= move;
+	  }
+	});
+  
+	return optimized;
+  }
+  
+  /**
+   * Beräknar total förbrukning, topp3, medeltopp och effektavgift (45 kr/kW)
+   * utifrån redan optimerad data.
+   */
+  export function calculateGeMetrics(data: EnergyData[]) {
+	const totalUsage = data.reduce((sum, e) => sum + e.usage, 0);
+	const sorted = [...data].sort((a, b) => b.usage - a.usage);
+	const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);
+	const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
+	const powerFee = averageTop3 * 45; // Assuming kW and 45 SEK/kW
+	return { totalUsage, top3Peaks, averageTop3, powerFee };
+  }
