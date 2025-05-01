@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import * as Papa from "papaparse";
 import Result from "./Result";
-import { parseEnergyData, EnergyData } from "../utils/energyCalculations";
-
 import { Dropdown } from "../components/Dropdown";
+import { EnergyData , parseEnergyData } from "../calculations/core";
 
 const Home: React.FC = () => {
 
