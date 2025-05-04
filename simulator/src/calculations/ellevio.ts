@@ -21,7 +21,7 @@ function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyData[] {
 	  consumption: entry.usage }));
 	
 	console.log("original data sum", data.reduce((sum, e) => sum + e.usage, 0))
-	console.log("▶️ Cloned original data:", cloned.slice(0, 5));
+	console.log("Cloned original data:", cloned.slice(0, 5));
   
 	// 2) Create adjusted values for peak detection
 	const adjusted = applyEllevioRule(cloned).map((entry) => ({
@@ -29,14 +29,14 @@ function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyData[] {
 	  adjusted: entry.adjusted
 	}));
 	
-	console.log("▶️ Adjusted data with Ellevio rule applied:", adjusted.slice(0, 5));
+	console.log("Adjusted data with Ellevio rule applied:", adjusted.slice(0, 5));
   
 	// 3) Get top N peaks
 	const topNPeaks = [...adjusted]
 	  .sort((a, b) => b.adjusted - a.adjusted)
 	  .slice(0, topN);
 	
-	console.log("▶️ Top N peaks by adjusted consumption:", topNPeaks.map(p => p.adjusted));
+	console.log("Top N peaks by adjusted consumption:", topNPeaks.map(p => p.adjusted));
   
 	// 4) Process each peak
 	topNPeaks.forEach(peak => {
@@ -44,14 +44,14 @@ function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyData[] {
 		const originalEntry = cloned[peakIndex]
 	  
 	  let amountToMove = originalEntry.consumption * 0.5;
-	  console.log(`▶️ Amount to move for peak at ${originalEntry.timestamp}:`, amountToMove);
+	  console.log(`Amount to move for peak at ${originalEntry.timestamp}:`, amountToMove);
   
 	  // Get night targets with proper tracking
 	  const nightTargets = cloned
 		.filter(e => NIGHT_HOURS.includes(e.timestamp.getHours()))
 		.sort((a, b) => a.consumption - b.consumption);
   
-	  console.log("▶️ Night target candidates:", nightTargets.slice(0, 5));
+	  console.log("Night target candidates:", nightTargets.slice(0, 5));
   
 	  // Transfer energy
 	  for (const target of nightTargets) {
@@ -63,11 +63,11 @@ function optimizeTopNPeaks(data: EnergyData[], topN: number = 3): EnergyData[] {
 		target.consumption += move;
 		originalEntry.consumption -= move;
 		amountToMove -= move;
-		console.log(`▶️ Moving ${move} from peak to target at ${target.timestamp}`);
+		console.log(`Moving ${move} from peak to target at ${target.timestamp}`);
 	  }
 	});
   
-	console.log("▶️ Final optimized data (after adjustments):", cloned.slice(0, 5));
+	console.log("Final optimized data (after adjustments):", cloned.slice(0, 5));
 	
 	// Convert back to EnergyData format
 	return cloned.map(({ timestamp, consumption }) => ({
@@ -87,8 +87,10 @@ export class EllevioStrategy implements ProviderStrategy {
 		const totalUsage = oldData.reduce((sum, e) => sum + e.usage, 0);
 	
 		const sorted = [...data].sort((a, b) => b.usage - a.usage);
-		const originalsorted = [...oldData].sort((a, b) => b.usage - a.usage);
-	
+		const originalsorted = applyEllevioRule(oldData)
+		.map(({ timestamp, adjusted }) => ({ timestamp, usage: adjusted }))
+		.sort((a, b) => b.usage - a.usage);
+		
 		const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);
 		const originalTop3Peaks = originalsorted.slice(0, 3).map((e) => e.usage);
 	

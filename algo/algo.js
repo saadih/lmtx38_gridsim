@@ -168,8 +168,8 @@ function optimizeTopNForEllevio(data, topN) {
   }
   
 function optimizeTop3ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
-function optimizeTop5ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
-function optimizeTop7ForEllevio(data) { return optimizeTopNForEllevio(data, 3); }
+function optimizeTop5ForEllevio(data) { return optimizeTopNForEllevio(data, 5); }
+function optimizeTop7ForEllevio(data) { return optimizeTopNForEllevio(data, 7); }
 
 // -------------------------
 // Method 2: Flattening (Linear Redistribution)

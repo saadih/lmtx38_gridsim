@@ -86,7 +86,7 @@ const Home: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md p-6">
       {/* Dropdown for selecting provider */}
       <div className="mb-6 flex justify-center">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2 mr-4 mt-2">
           Välj leverantör
         </label>
         <Dropdown
