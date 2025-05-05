@@ -72,7 +72,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 								))}
 							</ul>
 						}
-						description="* 50% av topparna har flyttats till natttimmar enligt Ellevio"
+						description={provider==="Ellevio" ? "* 50% av topparna har flyttats till natttimmar enligt Ellevio" : undefined}
 					/>
 				</div>
 
@@ -94,6 +94,18 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 					)}
 				/>
 			</section>
+				{/* Tips-ruta för att minska effekttoppar */}
+				<section className="mt-6">
+				<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+					<h3 className="text-lg font-semibold mb-2">Tips för att minska effekttoppar</h3>
+					<ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+					<li>Sprid ut användningen av energikrävande apparater över dagen.</li>
+					<li>Schema-styr tvättmaskin och diskmaskin till nattens lågprisperioder, när andra apparater inte är aktiva.</li>
+					<li>Använd smarta termostater för att undvika korta, intensiva uppvärmningstoppar.</li>
+					<li>Ladda elbil eller batterilagring under perioder med lägre belastning.</li>
+					</ul>
+				</div>
+				</section>
 
 			{/* Tabell med optimerad data */}
 			<section className="overflow-x-auto">
