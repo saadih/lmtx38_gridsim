@@ -1,6 +1,14 @@
 import React from "react";
+import {
+	BarChart,
+	Bar,
+	XAxis,
+	YAxis,
+	Tooltip,
+	ResponsiveContainer,
+	CartesianGrid,
+} from "recharts";
 import { getProviderStrategy, EnergyMetrics, EnergyData } from "../calculations/core";
-
 
 interface ResultProps {
 	data: EnergyData[];
@@ -9,7 +17,7 @@ interface ResultProps {
 
 const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const strategy = getProviderStrategy(provider);
-	const metrics: EnergyMetrics = strategy.calculateMetrics(data)
+	const metrics: EnergyMetrics = strategy.calculateMetrics(data);
 
 	return (
 		<div className="space-y-6">
@@ -21,14 +29,11 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 			</header>
 
 			<section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				{/* Totalförbrukning */}
 				<MetricCard
 					title="Total Förbrukning"
 					value={`${metrics.totalUsage.toFixed(2)} kWh`}
 					description="Totalförbrukning förändras inte vid optimering"
 				/>
-
-				{/* Medeltopp efter optimering */}
 				<MetricCard
 					title="Medeltopp (Efter optimering)"
 					value={
@@ -44,8 +49,6 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						metrics.averageTop3
 					)}
 				/>
-
-				{/* Topp 3 Förbrukningstoppar */}
 				<div className="md:col-span-2">
 					<MetricCard
 						title="Topp 3 Förbrukningstoppar"
@@ -72,11 +75,37 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 								))}
 							</ul>
 						}
-						description={provider==="Ellevio" ? "* 50% av topparna har flyttats till natttimmar enligt Ellevio" : undefined}
+						description={
+							provider === "Ellevio"
+								? "* 50% av topparna har flyttats till natttimmar enligt Ellevio"
+								: undefined
+						}
 					/>
-				</div>
 
-				{/* Effektavgift */}
+				</div>
+				{metrics.transfers && metrics.transfers.length > 0 && (
+					<div className="md:col-span-2">
+						<div className="p-4 rounded-lg border border-yellow-200 bg-yellow-50">
+							<h3 className="text-sm font-semibold text-yellow-800 mb-2">Så här fungerade optimeringen</h3>
+							<p className="text-sm text-yellow-900 mb-2">
+								För att minska topparna har energi flyttats från högbelastade timmar till tider på natten med lägre förbrukning. Detta resulterade i en jämnare förbrukning och lägre effektavgifter.
+							</p>
+							<ul className="list-disc list-inside text-sm text-yellow-900 space-y-1">
+								{metrics.transfers.map((t, i) => {
+									const pad = (n: number) => n.toString().padStart(2, '0');
+									const format = (d: Date) =>
+										`${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:00`;
+									return (
+										<li key={i}>
+											{t.amount.toFixed(2)} kWh flyttades från {format(t.from)} till {format(t.to)}.
+										</li>
+									);
+								})}
+							</ul>
+						</div>
+					</div>
+				)}
+
 				<MetricCard
 					title="Effektavgift (Efter optimering)"
 					value={
@@ -94,40 +123,44 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 					)}
 				/>
 			</section>
-				{/* Tips-ruta för att minska effekttoppar */}
-				<section className="mt-6">
+
+
+
+			<section className="mt-6">
 				<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
 					<h3 className="text-lg font-semibold mb-2">Tips för att minska effekttoppar</h3>
 					<ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-					<li>Sprid ut användningen av energikrävande apparater över dagen.</li>
-					<li>Schema-styr tvättmaskin och diskmaskin till nattens lågprisperioder, när andra apparater inte är aktiva.</li>
-					<li>Använd smarta termostater för att undvika korta, intensiva uppvärmningstoppar.</li>
-					<li>Ladda elbil eller batterilagring under perioder med lägre belastning.</li>
+						<li>Sprid ut användningen av energikrävande apparater över dagen.</li>
+						<li>
+							Schema-styr tvättmaskin och diskmaskin till nattens lågprisperioder, när andra apparater inte är aktiva.
+						</li>
+						<li>
+							Använd smarta termostater för att undvika korta, intensiva uppvärmningstoppar.
+						</li>
+						<li>Ladda elbil eller batterilagring under perioder med lägre belastning.</li>
 					</ul>
 				</div>
-				</section>
+			</section>
 
-			{/* Tabell med optimerad data */}
-			<section className="overflow-x-auto">
-				<h3 className="text-lg font-semibold mb-2">Optimerad Förbrukning</h3>
-				<table className="min-w-full divide-y divide-gray-200">
-					<thead className="bg-gray-50">
-						<tr>
-							<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-								Tidpunkt
-							</th>
-							<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-								Förbrukning (kWh)
-							</th>
-						</tr>
-					</thead>
-				</table>
+			{/* Column Chart */}
+			<section className="mt-6">
+				<h3 className="text-lg font-semibold mb-2">Optimerad Förbrukning (Graf)</h3>
+				<div className="h-64">
+					<ResponsiveContainer width="100%" height="100%">
+						<BarChart data={metrics.data}>
+							<CartesianGrid strokeDasharray="3 3" />
+							<XAxis dataKey="timestamp" tickFormatter={(t) => new Date(t).toLocaleTimeString()} />
+							<YAxis unit=" kWh" />
+							<Tooltip formatter={(value: number) => [`${value.toFixed(2)} kWh`, "Förbrukning"]} />
+							<Bar dataKey="usage" fill="#3B82F6" />
+						</BarChart>
+					</ResponsiveContainer>
+				</div>
 			</section>
 		</div>
 	);
 };
 
-// Hjälpkomponenter
 const MetricCard: React.FC<{
 	title: string;
 	value: React.ReactNode;
@@ -135,13 +168,13 @@ const MetricCard: React.FC<{
 	highlight?: boolean;
 	changePercentage?: string;
 }> = ({ title, value, description, highlight = false, changePercentage }) => (
-	<div className={`p-4 rounded-lg border ${highlight ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+	<div className={`p-4 rounded-lg border ${highlight ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
 		<h3 className="text-sm font-medium text-gray-600">{title}</h3>
-		<div className={`mt-1 text-2xl ${highlight ? 'font-bold text-blue-600' : 'font-semibold text-gray-800'}`}>{value}</div>
+		<div className={`mt-1 text-2xl ${highlight ? "font-bold text-blue-600" : "font-semibold text-gray-800"}`}>{value}</div>
 		{changePercentage && (
-			<div className={`mt-1 text-sm ${parseFloat(changePercentage) < 0 ? 'text-green-600' : 'text-red-600'}`}>
-				{parseFloat(changePercentage) < 0 ? 'Besparing ' : 'Ökning '}
-				{changePercentage.replace('-', '')}
+			<div className={`mt-1 text-sm ${parseFloat(changePercentage) < 0 ? "text-green-600" : "text-red-600"}`}>
+				{parseFloat(changePercentage) < 0 ? "Besparing " : "Ökning "}
+				{changePercentage.replace("-", "")}
 			</div>
 		)}
 		{description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
@@ -153,4 +186,5 @@ function calculateChangePercentage(original: number, optimized: number): string 
 	const change = ((optimized - original) / original) * 100;
 	return `${change.toFixed(1)}%`;
 }
+
 export default Result;
