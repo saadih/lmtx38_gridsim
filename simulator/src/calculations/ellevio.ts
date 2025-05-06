@@ -1,7 +1,7 @@
 import {EnergyMetrics, EnergyData, ProviderStrategy } from "./core";
 
 const NIGHT_HOURS = [22, 23, 0, 1, 2, 3, 4, 5];
-
+const Ellevio_rate = 81.25; // SEK/kWh
 // Applicera Ellevio nattregel (justerar kWh för effektavgift)
 function applyEllevioRule(data : EnergyData[] ) {
 	return data.map(({ timestamp, usage }) => {
@@ -10,7 +10,7 @@ function applyEllevioRule(data : EnergyData[] ) {
 	  const adjusted = isNight ? usage / 2 : usage;
 	  return { timestamp, adjusted };
 	});
-  }
+}
 
 /**
  * Skiftar 50% av de topN största förbrukningstopparna till nattimmar med lägst usage.
@@ -80,42 +80,56 @@ function optimizeTopNPeaks(
   
 export class EllevioStrategy implements ProviderStrategy {
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics {
-		const optimizedNPeaks = optimizeTopNPeaks(oldData)
-		const data = applyEllevioRule(optimizedNPeaks.optimized)
-		.map(({ timestamp, adjusted }) => ({
-		  timestamp,
-		  usage: adjusted,
-		}));
-		
-		const totalUsage = oldData.reduce((sum, e) => sum + e.usage, 0);
-	
-		const sorted = [...data].sort((a, b) => b.usage - a.usage);
-		const originalSorted = applyEllevioRule(oldData)
-		.map(({ timestamp, adjusted }) => ({ timestamp, usage: adjusted }))
-		.sort((a, b) => b.usage - a.usage);
-		
-		const top3Peaks = sorted.slice(0, 3).map((e) => e.usage);
-		const originalTop3Peaks = originalSorted.slice(0, 3).map((e) => e.usage);
-
-		const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
-		const originalAverageTop3 = originalTop3Peaks.reduce((s, v) => s + v, 0) / 3;
-	
-		const powerFee = averageTop3 * 65; // 0.65 SEK/kWhs
-		const originalPowerFee = originalAverageTop3 * 65
-
-		const transfers = optimizedNPeaks.transfers
-		console.log(transfers);
-		return {
-			totalUsage,
-			top3Peaks,
-			averageTop3,
-			powerFee,
-			originalTop3Peaks,
-			originalAverageTop3,
-			originalPowerFee,
-			transfers,
-			data,
-		};
+	  // 1) Redistribute raw usage (no halving yet)
+	  const { optimized: rawOptimized, transfers } = optimizeTopNPeaks(oldData);
+	  const adjustedData = applyEllevioRule(rawOptimized)
+	  .map(({ timestamp, adjusted }) => ({ timestamp, usage: adjusted }));
+	  
+	  // 2) Apply night-rule only for billing
+	  const billedOptimized = applyEllevioRule(rawOptimized);
+	  const billedOriginal = applyEllevioRule(oldData);
+  
+	  // 3) Top-3 after optimization & night-rule
+	  const top3Peaks = [...billedOptimized]
+		.sort((a, b) => b.adjusted - a.adjusted)
+		.slice(0, 3)
+		.map(e => e.adjusted);
+  
+	  // 4) Top-3 of original before optimization but with night-rule
+	  const originalTop3Peaks = [...billedOriginal]
+		.sort((a, b) => b.adjusted - a.adjusted)
+		.slice(0, 3)
+		.map(e => e.adjusted);
+  
+	  // 5) Averages & fees
+	  const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
+	  const originalAverageTop3 = originalTop3Peaks.reduce((s, v) => s + v, 0) / 3;
+	  const powerFee = averageTop3 * Ellevio_rate;
+	  const originalPowerFee = originalAverageTop3 * Ellevio_rate;
+  
+	  // 6) Total usage remains sum of raw input
+	  const totalUsage = oldData.reduce((s, e) => s + e.usage, 0);
+  
+	  return {
+		totalUsage,
+		top3Peaks,
+		averageTop3,
+		powerFee,
+		originalTop3Peaks,
+		originalAverageTop3,
+		originalPowerFee,
+		transfers,
+		data: rawOptimized,
+		adjustedData,
+		rate: Ellevio_rate
+	  };
+	}
+	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[] {
+		// This is your old applyEllevioRule, but returning timestamp + usage
+		return data.map(({ timestamp, usage }) => {
+		  const isNight = NIGHT_HOURS.includes(timestamp.getHours());
+		  return { timestamp, usage: isNight ? usage / 2 : usage };
+		});
 	}
 	getTips(): string[] {
 		return [

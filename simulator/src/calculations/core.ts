@@ -60,10 +60,14 @@ export interface EnergyMetrics {
 	originalAverageTop3?: number;
 	originalPowerFee?: number;
 	transfers: TransferLog[] | null;
-	data: EnergyData[]
+	data: EnergyData[];
+	// Endast för Ellevio
+	adjustedData?: EnergyData[];
+	rate: number;
 }
 
 export interface ProviderStrategy {
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics;
+	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[];
 	getTips(): string[];
 }

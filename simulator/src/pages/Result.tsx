@@ -1,15 +1,15 @@
 import React from "react";
 import {
-	BarChart,
-	Bar,
+	LineChart,
+	Line,
 	XAxis,
 	YAxis,
-	Tooltip,
-	ResponsiveContainer,
 	CartesianGrid,
+	Tooltip,
+	ReferenceLine,
+	ResponsiveContainer,
 } from "recharts";
 import { getProviderStrategy, EnergyMetrics, EnergyData } from "../calculations/core";
-
 interface ResultProps {
 	data: EnergyData[];
 	provider: "Ellevio" | "GE";
@@ -17,12 +17,39 @@ interface ResultProps {
 
 const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const strategy = getProviderStrategy(provider);
-
 	const metrics: EnergyMetrics = strategy.calculateMetrics(data)
 	const tips: string[] = strategy.getTips();
 
+	const originalSeries = strategy
+	.applyRule(data)
+	.map(({ timestamp, usage }) => ({
+	  timestamp: timestamp.getTime(),
+	  usage,
+	}));
+	
+	const optimizedSeries = strategy
+	.applyRule(metrics.data)
+	.map(({ timestamp, usage }) => ({
+		timestamp: timestamp.getTime(),
+		usage,
+	}));
+	
+	const commonProps = {
+		margin: { top: 10, right: 30, left: 0, bottom: 0 },
+	};
+	
+	// Formatter som visar dag/månad och timme/minut
+	const formatDateTime = (ms: number) =>
+		new Date(ms).toLocaleString("sv-SE", {
+		  day: "2-digit",
+		  month: "2-digit",
+		  hour: "2-digit",
+		  minute: "2-digit",
+		});
+
+	
 	return (
-		<div className="space-y-6">
+		<div className="space-y-8">
 			<header className="space-y-2">
 				<h2 className="text-2xl font-bold text-gray-800">Optimering Resultat</h2>
 				<p className="text-gray-600">
@@ -88,7 +115,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 				{metrics.transfers && metrics.transfers.length > 0 && (
 					<div className="md:col-span-2">
 						<div className="p-4 rounded-lg border border-yellow-200 bg-yellow-50">
-							<h3 className="text-sm font-semibold text-yellow-800 mb-2">Så här fungerade optimeringen</h3>
+							<h3 className="text-lg font-semibold text-yellow-800 mb-2">Så här fungerade optimeringen</h3>
 							<p className="text-sm text-yellow-900 mb-2">
 								För att minska topparna har energi flyttats från högbelastade timmar till tider på natten med lägre förbrukning. Detta resulterade i en jämnare förbrukning och lägre effektavgifter.
 							</p>
@@ -107,23 +134,39 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						</div>
 					</div>
 				)}
+				{/* Blåa boxar: Effektavgift + Pris per kWh */}
+				<section className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+				{/* Box 1: Effektavgift */}
+				<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+					<h4 className="text-sm font-medium text-gray-800 mb-1">
+					Effektavgift (Efter optimering)
+					</h4>
+					<div className="text-2xl font-bold text-blue-600">
+					{metrics.powerFee.toFixed(2)} SEK
+					</div>
+					<div className="text-sm text-gray-700">
+					(Före: {metrics.originalPowerFee?.toFixed(2)} SEK)
+					</div>
+					<div className="text-sm text-green-600 mt-1">
+					Besparing {calculateChangePercentage(metrics.originalPowerFee || 0, metrics.powerFee)}
+					</div>
+				</div>
 
-				<MetricCard
-					title="Effektavgift (Efter optimering)"
-					value={
-						<>
-							<span>{metrics.powerFee.toFixed(2)} SEK</span>
-							<span className="block text-sm text-gray-500">
-								(Före: {metrics.originalPowerFee?.toFixed(2)} SEK)
-							</span>
-						</>
-					}
-					highlight
-					changePercentage={calculateChangePercentage(
-						metrics.originalPowerFee || 0,
-						metrics.powerFee
+				{/* Box 2: Pris per kWh */}
+				<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+					<h4 className="text-sm font-medium text-gray-800 mb-1">
+					Pris per kWh
+					</h4>
+					<div className="text-2xl font-bold text-blue-600">
+					{metrics.rate.toFixed(2)} SEK
+					</div>
+					{provider === "Ellevio" && (
+					<div className="text-sm text-gray-700 mt-1">
+						Halverad nattförbrukning 22-05
+					</div>
 					)}
-				/>
+				</div>
+				</section>
 			</section>
 				{/* Tips-ruta för att minska effekttoppar */}
 				<section className="mt-6">
@@ -137,21 +180,87 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 					</div>
 				</section>
 
-			{/* Column Chart */}
-			<section className="mt-6">
-				<h3 className="text-lg font-semibold mb-2">Optimerad Förbrukning (Graf)</h3>
-				<div className="h-64">
-					<ResponsiveContainer width="100%" height="100%">
-						<BarChart data={metrics.data}>
-							<CartesianGrid strokeDasharray="3 3" />
-							<XAxis dataKey="timestamp" tickFormatter={(t) => new Date(t).toLocaleTimeString()} />
-							<YAxis unit=" kWh" />
-							<Tooltip formatter={(value: number) => [`${value.toFixed(2)} kWh`, "Förbrukning"]} />
-							<Bar dataKey="usage" fill="#3B82F6" />
-						</BarChart>
-					</ResponsiveContainer>
-				</div>
-			</section>
+				<section className="grid grid-cols-1 gap-6">
+      {/* Före optimering */}
+      <div className="h-64 p-4 border rounded-lg bg-white">
+        <h3 className="text-lg font-semibold mb-2">Före optimering</h3>
+        <ResponsiveContainer width="100%" height="80%">
+          <LineChart data={originalSeries} {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={["auto", "auto"]}
+			  tick ={false}
+            />
+            <YAxis unit=" kWh" />
+			<ReferenceLine 
+				y={metrics.originalAverageTop3} 
+				stroke="#FF0000" 
+				strokeDasharray="4 4" 
+				label={{
+				value: `Avg Topp 3: ${(metrics.originalAverageTop3 ?? 0).toFixed(2)} kWh`,
+				position: "top",
+				fill: "#FF0000",
+				fontSize: 12
+				}}
+			/>
+            <Tooltip
+              labelFormatter={formatDateTime}
+              formatter={(v: number) => `${v.toFixed(2)} kWh`}
+            />
+            <Line
+              type="monotone"
+              dataKey="usage"
+              dot={false}
+              stroke="#8884d8"
+              name="Före"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Efter optimering */}
+      <div className="h-64 p-4 border rounded-lg bg-white">
+        <h3 className="text-lg font-semibold mb-2">Efter optimering</h3>
+        <ResponsiveContainer width="100%" height="80%">
+          <LineChart data={optimizedSeries} {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              	dataKey="timestamp"
+              	type="number"
+              	scale="time"
+              	domain={["auto", "auto"]}
+				tick ={false}
+            />
+            <YAxis unit=" kWh"/>
+			<ReferenceLine 
+				y={metrics.averageTop3} 
+				stroke="#FF0000" 
+				strokeDasharray="4 4" 
+				label={{
+				value: `Avg Topp 3: ${metrics.averageTop3.toFixed(2)} kWh`,
+				position: "top",
+				fill: "#FF0000",
+				fontSize: 12
+				}}
+			/>
+            <Tooltip
+              labelFormatter={formatDateTime}
+              formatter={(v: number) => `${v.toFixed(2)} kWh`}
+            />
+            <Line
+              type="monotone"
+              dataKey="usage"
+              dot={false}
+              stroke="#82ca9d"
+              name="Efter"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
 		</div>
 	);
 };

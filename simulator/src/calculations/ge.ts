@@ -3,6 +3,8 @@ import { EnergyData, EnergyMetrics, ProviderStrategy } from "./core";
 /**
  * Göteborgs Energi: skiftar 50% av toppN från högsta usage till lägsta usage (inga nattregler).
  */
+const GE_rate = 45; // SEK/kWh
+
 function optimizeTopNPeaksGE(data: EnergyData[], topN: number = 3): EnergyData[] {
 	const optimized = data.map((e) => ({ ...e }));
 	const peaks = optimized
@@ -30,6 +32,7 @@ function optimizeTopNPeaksGE(data: EnergyData[], topN: number = 3): EnergyData[]
 	return optimized;
 }
 
+
 export class GoteborgStrategy implements ProviderStrategy {
 	calculateMetrics(data: EnergyData[]): EnergyMetrics {
 		const optimized = optimizeTopNPeaksGE(data);
@@ -43,8 +46,8 @@ export class GoteborgStrategy implements ProviderStrategy {
 		const averageTop3 = top3Peaks.reduce((s, v) => s + v, 0) / 3;
 		const originalAverageTop3 = originalTop3Peaks.reduce((s, v) => s + v, 0) / 3;
 
-		const powerFee = averageTop3 * 45;
-		const originalPowerFee = originalAverageTop3 * 45;
+		const powerFee = averageTop3 * GE_rate;
+		const originalPowerFee = originalAverageTop3 * GE_rate;
 
 		return {
 			totalUsage,
@@ -56,8 +59,13 @@ export class GoteborgStrategy implements ProviderStrategy {
 			originalPowerFee,
 			transfers: null,
 			data,
+			rate: GE_rate
 		};
 	}
+	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[] {
+		// GE has no night‐rule, so it’s a no-op
+		return data.map(({ timestamp, usage }) => ({ timestamp, usage }));
+	  }
 	getTips(): string[] {
 		return [
 			"Göteborgs Energi rekommenderar att optimera din energiförbrukning.",
