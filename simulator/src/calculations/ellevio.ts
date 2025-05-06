@@ -110,4 +110,14 @@ export class EllevioStrategy implements ProviderStrategy {
 			data,
 		};
 	}
+	getTips(): string[] {
+		return [
+			"Ellevio rekommenderar att optimera din energiförbrukning.",
+			"Flytta energiförbrukning till natttimmar för att minska kostnaderna.",
+			"Identifiera och minimera perioder med hög förbrukning.",
+			"Optimera energifördelningen för att undvika att överskrida kapacitetsgränser.",
+			"Övervaka dina energiförbrukningsmönster regelbundet.",
+			"Utnyttja leverantörsspecifika regler som Ellevios nattjustering."
+		];
+	}
 }

@@ -10,6 +10,7 @@ interface ResultProps {
 const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const strategy = getProviderStrategy(provider);
 	const metrics: EnergyMetrics = strategy.calculateMetrics(data)
+	const tips: string[] = strategy.getTips();
 
 	return (
 		<div className="space-y-6">
@@ -95,16 +96,16 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 				/>
 			</section>
 				{/* Tips-ruta för att minska effekttoppar */}
+				{/* Dynamisk tips-ruta */}
 				<section className="mt-6">
-				<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+					<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
 					<h3 className="text-lg font-semibold mb-2">Tips för att minska effekttoppar</h3>
 					<ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-					<li>Sprid ut användningen av energikrävande apparater över dagen.</li>
-					<li>Schema-styr tvättmaskin och diskmaskin till nattens lågprisperioder, när andra apparater inte är aktiva.</li>
-					<li>Använd smarta termostater för att undvika korta, intensiva uppvärmningstoppar.</li>
-					<li>Ladda elbil eller batterilagring under perioder med lägre belastning.</li>
+						{tips.map((tip, i) => (
+						<li key={i}>{tip}</li>
+						))}
 					</ul>
-				</div>
+					</div>
 				</section>
 
 			{/* Tabell med optimerad data */}
