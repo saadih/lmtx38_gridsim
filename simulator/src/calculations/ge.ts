@@ -54,6 +54,7 @@ export class GoteborgStrategy implements ProviderStrategy {
 			originalTop3Peaks,
 			originalAverageTop3,
 			originalPowerFee,
+			transfers: null,
 			data,
 		};
 	}

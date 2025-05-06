@@ -7,6 +7,13 @@ export interface EnergyData {
 	usage: number;
 }
 
+export interface TransferLog {
+	from: Date;
+	to: Date;
+	amount: number;
+}
+
+
 const providerStrategies: { [key: string]: ProviderStrategy } = {
 	Ellevio: new EllevioStrategy(),
 	GE: new GoteborgStrategy(),
@@ -52,6 +59,7 @@ export interface EnergyMetrics {
 	originalTop3Peaks?: number[];
 	originalAverageTop3?: number;
 	originalPowerFee?: number;
+	transfers: TransferLog[] | null;
 	data: EnergyData[]
 }
 
