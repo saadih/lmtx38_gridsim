@@ -65,4 +65,5 @@ export interface EnergyMetrics {
 
 export interface ProviderStrategy {
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics;
+	getTips(): string[];
 }

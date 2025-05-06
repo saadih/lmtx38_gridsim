@@ -58,4 +58,14 @@ export class GoteborgStrategy implements ProviderStrategy {
 			data,
 		};
 	}
+	getTips(): string[] {
+		return [
+			"Göteborgs Energi rekommenderar att optimera din energiförbrukning.",
+			"Minska energianvändningen under högbelastningstimmar för att spara kostnader.",
+			"Flytta energikrävande aktiviteter till lågbelastningstimmar.",
+			"Övervaka dina energiförbrukningsmönster regelbundet.",
+			"Överväg att använda energieffektiva apparater.",
+			"Optimera din energianvändning för att sänka effektavgifterna.",
+		];
+	}
 };
