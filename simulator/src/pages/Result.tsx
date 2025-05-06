@@ -96,7 +96,6 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 				/>
 			</section>
 				{/* Tips-ruta för att minska effekttoppar */}
-				{/* Dynamisk tips-ruta */}
 				<section className="mt-6">
 					<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
 					<h3 className="text-lg font-semibold mb-2">Tips för att minska effekttoppar</h3>
