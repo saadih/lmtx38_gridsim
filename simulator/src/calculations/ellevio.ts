@@ -1,4 +1,4 @@
-import {EnergyMetrics, EnergyData, ProviderStrategy } from "./core";
+import {EnergyMetrics, EnergyData, TransferLog, ProviderStrategy, StrategyTypes } from "./core";
 
 const NIGHT_HOURS = [22, 23, 0, 1, 2, 3, 4, 5];
 const Ellevio_rate = 81.25; // SEK/kWh
@@ -11,16 +11,6 @@ function applyEllevioRule(data : EnergyData[] ) {
 	  return { timestamp, adjusted };
 	});
 }
-
-/**
- * Skiftar 50% av de topN största förbrukningstopparna till nattimmar med lägst usage.
- */
-interface TransferLog {
-	from: Date;
-	to: Date;
-	amount: number;
-}
-
 function optimizeTopNPeaks(
 	data: EnergyData[],
 	topN: number = 3
@@ -79,6 +69,8 @@ function optimizeTopNPeaks(
 }
   
 export class EllevioStrategy implements ProviderStrategy {
+	strategyType = StrategyTypes.Top3Peak
+
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics {
 	  // 1) Redistribute raw usage (no halving yet)
 	  const { optimized: rawOptimized, transfers } = optimizeTopNPeaks(oldData);
@@ -138,7 +130,8 @@ export class EllevioStrategy implements ProviderStrategy {
 			"Identifiera och minimera perioder med hög förbrukning.",
 			"Optimera energifördelningen för att undvika att överskrida kapacitetsgränser.",
 			"Övervaka dina energiförbrukningsmönster regelbundet.",
-			"Utnyttja leverantörsspecifika regler som Ellevios nattjustering."
+			"Utnyttja leverantörsspecifika regler som Ellevios nattjustering.",
+			"https://www.ellevio.se/abonnemang/ny-prismodell-baserad-pa-effekt/#h-sa-kan-du-sanka-dina-effekttoppar"
 		];
 	}
 }

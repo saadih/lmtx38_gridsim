@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
 	LineChart,
 	Line,
@@ -8,6 +8,8 @@ import {
 	Tooltip,
 	ReferenceLine,
 	ResponsiveContainer,
+	Legend,
+	Area,
 } from "recharts";
 import { getProviderStrategy, EnergyMetrics, EnergyData } from "../calculations/core";
 interface ResultProps {
@@ -16,44 +18,50 @@ interface ResultProps {
 }
 
 const Result: React.FC<ResultProps> = ({ data, provider }) => {
+	const [isMaximized, setIsMaximized] = useState(false); // State for toggling chart size
+
+
 	const strategy = getProviderStrategy(provider);
 	const metrics: EnergyMetrics = strategy.calculateMetrics(data)
 	const tips: string[] = strategy.getTips();
 
 	const originalSeries = strategy
-	.applyRule(data)
-	.map(({ timestamp, usage }) => ({
-	  timestamp: timestamp.getTime(),
-	  usage,
-	}));
-	
+		.applyRule(data)
+		.map(({ timestamp, usage }) => ({
+			timestamp: timestamp.getTime(),
+			usage,
+		}));
+
 	const optimizedSeries = strategy
-	.applyRule(metrics.data)
-	.map(({ timestamp, usage }) => ({
-		timestamp: timestamp.getTime(),
-		usage,
+		.applyRule(metrics.data)
+		.map(({ timestamp, usage }) => ({
+			timestamp: timestamp.getTime(),
+			usage,
+		}));
+
+	// Construct combinedSeries
+	const combinedSeries = originalSeries.map((original, index) => ({
+		timestamp: original.timestamp,
+		usageBefore: original.usage,
+		usageAfter: optimizedSeries[index] ? optimizedSeries[index].usage : null,
 	}));
-	
-	const commonProps = {
-		margin: { top: 10, right: 30, left: 0, bottom: 0 },
-	};
-	
+
 	// Formatter som visar dag/månad och timme/minut
 	const formatDateTime = (ms: number) =>
 		new Date(ms).toLocaleString("sv-SE", {
-		  day: "2-digit",
-		  month: "2-digit",
-		  hour: "2-digit",
-		  minute: "2-digit",
+			day: "2-digit",
+			month: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
 		});
 
-	
+
 	return (
 		<div className="space-y-8">
 			<header className="space-y-2">
-				<h2 className="text-2xl font-bold text-gray-800">Optimering Resultat</h2>
+				<h2 className="text-2xl font-bold text-gray-800">Optimeringsresultat</h2>
 				<p className="text-gray-600">
-					Effektiviserad energiförbrukning med topplastoptimering
+					Optimeringsmetod : {strategy.strategyType}
 				</p>
 			</header>
 
@@ -136,131 +144,148 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 				)}
 				{/* Blåa boxar: Effektavgift + Pris per kWh */}
 				<section className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-				{/* Box 1: Effektavgift */}
-				<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
-					<h4 className="text-sm font-medium text-gray-800 mb-1">
-					Effektavgift (Efter optimering)
-					</h4>
-					<div className="text-2xl font-bold text-blue-600">
-					{metrics.powerFee.toFixed(2)} SEK
+					{/* Box 1: Effektavgift */}
+					<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+						<h4 className="text-sm font-medium text-gray-800 mb-1">
+							Effektavgift (Efter optimering)
+						</h4>
+						<div className="text-2xl font-bold text-blue-600">
+							{metrics.powerFee.toFixed(2)} SEK
+						</div>
+						<div className="text-sm text-gray-700">
+							(Före: {metrics.originalPowerFee?.toFixed(2)} SEK)
+						</div>
+						<div className="text-sm text-green-600 mt-1">
+							Besparing {calculateChangePercentage(metrics.originalPowerFee || 0, metrics.powerFee)}
+						</div>
 					</div>
-					<div className="text-sm text-gray-700">
-					(Före: {metrics.originalPowerFee?.toFixed(2)} SEK)
-					</div>
-					<div className="text-sm text-green-600 mt-1">
-					Besparing {calculateChangePercentage(metrics.originalPowerFee || 0, metrics.powerFee)}
-					</div>
-				</div>
 
-				{/* Box 2: Pris per kWh */}
-				<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
-					<h4 className="text-sm font-medium text-gray-800 mb-1">
-					Pris per kWh
-					</h4>
-					<div className="text-2xl font-bold text-blue-600">
-					{metrics.rate.toFixed(2)} SEK
+					{/* Box 2: Pris per kWh */}
+					<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+						<h4 className="text-sm font-medium text-gray-800 mb-1">
+							Pris per kWh
+						</h4>
+						<div className="text-2xl font-bold text-blue-600">
+							{metrics.rate.toFixed(2)} SEK
+						</div>
+						{provider === "Ellevio" && (
+							<div className="text-sm text-gray-700 mt-1">
+								Halverad nattförbrukning 22-05
+							</div>
+						)}
 					</div>
-					{provider === "Ellevio" && (
-					<div className="text-sm text-gray-700 mt-1">
-						Halverad nattförbrukning 22-05
-					</div>
-					)}
-				</div>
 				</section>
 			</section>
-				{/* Tips-ruta för att minska effekttoppar */}
-				<section className="mt-6">
-					<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+			{/* Tips-ruta för att minska effekttoppar */}
+			<section className="mt-6">
+				<div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
 					<h3 className="text-lg font-semibold mb-2">Tips för att minska effekttoppar</h3>
 					<ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
 						{tips.map((tip, i) => (
-						<li key={i}>{tip}</li>
+							<li key={i}>
+								{tip.startsWith("http") ? (
+									<a href={tip} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+										{tip}
+									</a>
+								) : (
+									tip
+								)}
+							</li>
 						))}
 					</ul>
+				</div>
+			</section>
+
+			<section className="grid grid-cols-1 gap-6">
+				{/* Före och Efter optimering */}
+				<div className={`p-4 border rounded-lg bg-white ${isMaximized ? "fixed inset-0 z-50 m-0 p-4 bg-white" : "relative"}`}>
+					<div className="flex justify-between items-center mb-4">
+						<h3 className="text-lg font-semibold">Före och efter optimering</h3>
+						<button
+							onClick={() => setIsMaximized(!isMaximized)}
+							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+						>
+							{isMaximized ? "Minimera" : "Maximera"}
+						</button>
 					</div>
-				</section>
+					<div className={isMaximized ? "h-[calc(100vh-100px)]" : "h-[500px]"}>
+						<ResponsiveContainer width="100%" height="100%">
+							<LineChart data={combinedSeries} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+								<CartesianGrid strokeDasharray="3 3" />
+								<XAxis
+									dataKey="timestamp"
+									type="number"
+									scale="time"
+									domain={["auto", "auto"]}
+									tick={false}
+								/>
+								<YAxis unit=" kWh" />
+								<Tooltip
+									labelFormatter={formatDateTime}
+									formatter={(value: number) => `${value.toFixed(2)} kWh`}
+								/>
+								<Legend verticalAlign="top" height={36} />
 
-				<section className="grid grid-cols-1 gap-6">
-      {/* Före optimering */}
-      <div className="h-64 p-4 border rounded-lg bg-white">
-        <h3 className="text-lg font-semibold mb-2">Före optimering</h3>
-        <ResponsiveContainer width="100%" height="80%">
-          <LineChart data={originalSeries} {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="timestamp"
-              type="number"
-              scale="time"
-              domain={["auto", "auto"]}
-			  tick ={false}
-            />
-            <YAxis unit=" kWh" />
-			<ReferenceLine 
-				y={metrics.originalAverageTop3} 
-				stroke="#FF0000" 
-				strokeDasharray="4 4" 
-				label={{
-				value: `Avg Topp 3: ${(metrics.originalAverageTop3 ?? 0).toFixed(2)} kWh`,
-				position: "top",
-				fill: "#FF0000",
-				fontSize: 12
-				}}
-			/>
-            <Tooltip
-              labelFormatter={formatDateTime}
-              formatter={(v: number) => `${v.toFixed(2)} kWh`}
-            />
-            <Line
-              type="monotone"
-              dataKey="usage"
-              dot={false}
-              stroke="#8884d8"
-              name="Före"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+								<ReferenceLine
+									y={metrics.originalAverageTop3}
+									stroke="#E69F00"
+									strokeDasharray="3 3"
+									label={{
+										value: `Avg Topp 3 Före: ${(metrics.originalAverageTop3 ?? 0).toFixed(2)} kWh`,
+										position: "top",
+										fill: "#E69F00",
+										fontSize: 12,
+									}}
+								/>
+								<ReferenceLine
+									y={metrics.averageTop3}
+									stroke="#56B4E9"
+									strokeDasharray="3 3"
+									label={{
+										value: `Avg Topp 3 Efter: ${metrics.averageTop3.toFixed(2)} kWh`,
+										position: "top",
+										fill: "#56B4E9",
+										fontSize: 12,
+									}}
+								/>
+								<Area
+									type="monotone"
+									dataKey="usageBefore"
+									stroke="none"
+									fill="rgba(255, 99, 71, 0.2)"
+									isAnimationActive={false}
+									activeDot={false}
+								/>
+								<Area
+									type="monotone"
+									dataKey="usageAfter"
+									stroke="none"
+									fill="rgba(60, 179, 113, 0.2)"
+									isAnimationActive={false}
+									activeDot={false}
+								/>
 
-      {/* Efter optimering */}
-      <div className="h-64 p-4 border rounded-lg bg-white">
-        <h3 className="text-lg font-semibold mb-2">Efter optimering</h3>
-        <ResponsiveContainer width="100%" height="80%">
-          <LineChart data={optimizedSeries} {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              	dataKey="timestamp"
-              	type="number"
-              	scale="time"
-              	domain={["auto", "auto"]}
-				tick ={false}
-            />
-            <YAxis unit=" kWh"/>
-			<ReferenceLine 
-				y={metrics.averageTop3} 
-				stroke="#FF0000" 
-				strokeDasharray="4 4" 
-				label={{
-				value: `Avg Topp 3: ${metrics.averageTop3.toFixed(2)} kWh`,
-				position: "top",
-				fill: "#FF0000",
-				fontSize: 12
-				}}
-			/>
-            <Tooltip
-              labelFormatter={formatDateTime}
-              formatter={(v: number) => `${v.toFixed(2)} kWh`}
-            />
-            <Line
-              type="monotone"
-              dataKey="usage"
-              dot={false}
-              stroke="#82ca9d"
-              name="Efter"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
+								<Line
+									type="monotone"
+									dataKey="usageBefore"
+									stroke="#009E73"
+									strokeWidth={2}
+									dot={false}
+									name="Före"
+								/>
+								<Line
+									type="monotone"
+									dataKey="usageAfter"
+									stroke="#D55E00"
+									strokeWidth={2}
+									dot={false}
+									name="Efter"
+								/>
+							</LineChart>
+						</ResponsiveContainer>
+					</div>
+				</div>
+			</section>
 		</div>
 	);
 };

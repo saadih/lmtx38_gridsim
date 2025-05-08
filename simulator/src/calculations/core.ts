@@ -13,6 +13,9 @@ export interface TransferLog {
 	amount: number;
 }
 
+export enum StrategyTypes {
+	Top3Peak = "Top-N-optimering: Minska toppar genom att fördela energi från de högsta N posterna."
+}
 
 const providerStrategies: { [key: string]: ProviderStrategy } = {
 	Ellevio: new EllevioStrategy(),
@@ -59,7 +62,7 @@ export interface EnergyMetrics {
 	originalTop3Peaks?: number[];
 	originalAverageTop3?: number;
 	originalPowerFee?: number;
-	transfers: TransferLog[] | null;
+	transfers: TransferLog[];
 	data: EnergyData[];
 	// Endast för Ellevio
 	adjustedData?: EnergyData[];
@@ -67,6 +70,7 @@ export interface EnergyMetrics {
 }
 
 export interface ProviderStrategy {
+	strategyType: StrategyTypes
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics;
 	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[];
 	getTips(): string[];

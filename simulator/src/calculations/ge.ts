@@ -1,12 +1,13 @@
-import { EnergyData, EnergyMetrics, ProviderStrategy } from "./core";
+import { EnergyData, EnergyMetrics, TransferLog, ProviderStrategy, StrategyTypes } from "./core";
 
 /**
  * Göteborgs Energi: skiftar 50% av toppN från högsta usage till lägsta usage (inga nattregler).
  */
 const GE_rate = 45; // SEK/kWh
 
-function optimizeTopNPeaksGE(data: EnergyData[], topN: number = 3): EnergyData[] {
+function optimizeTopNPeaksGE(data: EnergyData[], topN: number = 3): { optimized: EnergyData[]; transfers: TransferLog[] }  {
 	const optimized = data.map((e) => ({ ...e }));
+	const transfers: TransferLog[] = [];
 	const peaks = optimized
 		.map((e, i) => ({ index: i, usage: e.usage }))
 		.sort((a, b) => b.usage - a.usage)
@@ -26,16 +27,25 @@ function optimizeTopNPeaksGE(data: EnergyData[], topN: number = 3): EnergyData[]
 			optimized[t.index].usage += move;
 			optimized[index].usage -= move;
 			remaining -= move;
+
+			transfers.push({
+				from: new Date(optimized[t.index].timestamp),
+				to: new Date(optimized[index].timestamp),
+				amount: move
+			});
 		}
 	});
 
-	return optimized;
+	return {optimized , transfers};
 }
 
 
 export class GoteborgStrategy implements ProviderStrategy {
+	strategyType = StrategyTypes.Top3Peak
+
 	calculateMetrics(data: EnergyData[]): EnergyMetrics {
-		const optimized = optimizeTopNPeaksGE(data);
+		const optimizedData = optimizeTopNPeaksGE(data);
+		const optimized = optimizedData.optimized;
 		const totalUsage = data.reduce((sum, e) => sum + e.usage, 0);
 		const sorted = [...optimized].sort((a, b) => b.usage - a.usage);
 		const originalSorted = [...data].sort((a, b) => b.usage - a.usage);
@@ -57,7 +67,7 @@ export class GoteborgStrategy implements ProviderStrategy {
 			originalTop3Peaks,
 			originalAverageTop3,
 			originalPowerFee,
-			transfers: null,
+			transfers: optimizedData.transfers,
 			data,
 			rate: GE_rate
 		};
@@ -74,6 +84,7 @@ export class GoteborgStrategy implements ProviderStrategy {
 			"Övervaka dina energiförbrukningsmönster regelbundet.",
 			"Överväg att använda energieffektiva apparater.",
 			"Optimera din energianvändning för att sänka effektavgifterna.",
+			"https://www.goteborgenergi.se/privat/elnat/elnatsavgiften#effekt",
 		];
 	}
 };
