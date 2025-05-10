@@ -14,13 +14,11 @@ import {
 import { getProviderStrategy, EnergyMetrics, EnergyData } from "../calculations/core";
 interface ResultProps {
 	data: EnergyData[];
-	provider: "Ellevio" | "GE";
+	provider: string;
 }
 
 const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const [isMaximized, setIsMaximized] = useState(false); // State for toggling chart size
-
-
 	const strategy = getProviderStrategy(provider);
 	const metrics: EnergyMetrics = strategy.calculateMetrics(data)
 	const tips: string[] = strategy.getTips();
@@ -64,6 +62,29 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 					Optimeringsmetod : {strategy.strategyType}
 				</p>
 			</header>
+
+			{strategy.additionalInformation && (
+				<header className="space-y-2">
+					<h2 className="text-2xl font-bold text-gray-800">Observera</h2>
+					<p className="text-gray-600">
+						{strategy.additionalInformation.split(" ").map((word, index) =>
+							word.startsWith("http") ? (
+								<a
+									key={index}
+									href={word}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-blue-600 hover:underline"
+								>
+									{word}
+								</a>
+							) : (
+								`${word} `
+							)
+						)}
+					</p>
+				</header>
+			)}
 
 			<section className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<MetricCard

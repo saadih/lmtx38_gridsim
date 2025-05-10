@@ -1,6 +1,7 @@
 import { GoteborgStrategy } from "./ge";
 import { EllevioStrategy } from "./ellevio";
-export { GoteborgStrategy, EllevioStrategy }
+import { NewGoteborgStrategy } from "./geNy";
+export { GoteborgStrategy , NewGoteborgStrategy, EllevioStrategy}
 
 export interface EnergyData {
 	timestamp: Date;
@@ -20,6 +21,7 @@ export enum StrategyTypes {
 const providerStrategies: { [key: string]: ProviderStrategy } = {
 	Ellevio: new EllevioStrategy(),
 	GE: new GoteborgStrategy(),
+	"GE - Ny": new NewGoteborgStrategy(),
 };
 
 export function getProviderStrategy(provider: string): ProviderStrategy {
@@ -70,7 +72,8 @@ export interface EnergyMetrics {
 }
 
 export interface ProviderStrategy {
-	strategyType: StrategyTypes
+	strategyType: StrategyTypes;
+	additionalInformation? : string
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics;
 	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[];
 	getTips(): string[];

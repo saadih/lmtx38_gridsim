@@ -90,7 +90,7 @@ const Home: React.FC = () => {
           Välj leverantör
         </label>
         <Dropdown
-          options={["Ellevio", "GE"]}
+          options={["Ellevio", "GE", "GE - Ny"]}
           value={provider}
           onChange={(v) => setProvider(v as Provider)}
         />
