@@ -62,44 +62,36 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const ICON_VERTICAL_OFFSET = 20;  // lift icon above the dot
 	const DOT_RADIUS = 4;            // size of the peak-dot
 	const makePeakDot =
-		(peakSet: Set<number>, strokeColor: string) =>
-  	({ cx, cy, payload }: any) => {
-    // only render for timestamps in our top-3 set
-	if (!peakSet.has(payload.timestamp)) return <g />;
-
-    // decide day vs night for this point
-    const hour = new Date(payload.timestamp).getHours();
-    const isNight = nightHours?.includes(hour) ?? false;
-    const Icon = isNight ? Moon : Sun;
-
-    return (
-      <g>
-        {/* the colored dot */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={DOT_RADIUS}
-          fill={strokeColor}
-          stroke="white"
-          strokeWidth={1}
-        />
-        {/* the sun/moon icon above it */}
-        <g
-          transform={`
-            translate(
-              ${cx - ICON_SIZE / 2},
-              ${cy - ICON_SIZE / 2 - ICON_VERTICAL_OFFSET}
-            )
-          `}
-        >
-          <Icon
-            size={ICON_SIZE}
-            className={isNight ? "text-blue-500" : "text-yellow-500"}
-          />
-        </g>
-      </g>
-    );
-  };
+	(peakSet: Set<number>, strokeColor: string, Icon: React.FC<{size:number; color?:string;}>) =>
+		({ cx, cy, payload }: any) => {
+	  // only render on top-3 timestamps
+	  if (!peakSet.has(payload.timestamp)) return <g />;
+  
+	  return (
+		<g>
+		  {/* the colored dot */}
+		  <circle
+			cx={cx}
+			cy={cy}
+			r={DOT_RADIUS}
+			fill={strokeColor}
+			stroke="white"
+			strokeWidth={1}
+		  />
+		  {/* the icon just above */}
+		  <g
+			transform={`
+			  translate(
+				${cx - ICON_SIZE / 2},
+				${cy - ICON_SIZE / 2 - ICON_VERTICAL_OFFSET}
+			  )
+			`}
+		  >
+			<Icon size={ICON_SIZE} color={strokeColor} />
+		  </g>
+		</g>
+	  );
+	};
 	// Formatter som visar dag/månad och timme/minut
 	const formatDateTime = (ms: number) =>
 		new Date(ms).toLocaleString("sv-SE", {
@@ -344,20 +336,17 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 
 								{/* “Före” line with custom dots on the top 3 points */}
 								<Line
-									type="monotone"
 									dataKey="usageBefore"
 									stroke="#009E73"
 									strokeWidth={2}
-									dot={makePeakDot(originalSet, "#009E73")}
+									dot={makePeakDot(originalSet, "#009E73", Sun)}
 									name="Före"
 								/>
-								{/* “Efter” line with custom dots on the top 3 points */}
 								<Line
-									type="monotone"
 									dataKey="usageAfter"
 									stroke="#D55E00"
 									strokeWidth={2}
-									dot={makePeakDot(afterSet,"#D55E00")}
+									dot={makePeakDot(afterSet,  "#D55E00", Moon)}
 									name="Efter"
 								/>
 							</LineChart>
