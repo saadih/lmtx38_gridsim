@@ -12,6 +12,7 @@ import {
 	Area,
 } from "recharts";
 import { getProviderStrategy, EnergyMetrics, EnergyData } from "../calculations/core";
+import { Sun, Moon } from "lucide-react";
 interface ResultProps {
 	data: EnergyData[];
 	provider: string;
@@ -43,7 +44,62 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 		usageBefore: original.usage,
 		usageAfter: optimizedSeries[index] ? optimizedSeries[index].usage : null,
 	}));
+	  const nightHours = strategy.getNightHours?.(); // undefined for GE
 
+	const originalTop3 = [...originalSeries]
+		.sort((a, b) => b.usage - a.usage)
+		.slice(0, 3)
+		.map((p) => p.timestamp);
+	const afterTop3 = [...optimizedSeries]
+		.sort((a, b) => b.usage - a.usage)
+		.slice(0, 3)
+		.map((p) => p.timestamp);
+
+	const originalSet = new Set(originalTop3);
+	const afterSet = new Set(afterTop3);
+
+	const ICON_SIZE = 20;
+	const ICON_VERTICAL_OFFSET = 20;  // lift icon above the dot
+	const DOT_RADIUS = 4;            // size of the peak-dot
+	const makePeakDot =
+		(peakSet: Set<number>, strokeColor: string) =>
+  	({ cx, cy, payload }: any) => {
+    // only render for timestamps in our top-3 set
+	if (!peakSet.has(payload.timestamp)) return <g />;
+
+    // decide day vs night for this point
+    const hour = new Date(payload.timestamp).getHours();
+    const isNight = nightHours?.includes(hour) ?? false;
+    const Icon = isNight ? Moon : Sun;
+
+    return (
+      <g>
+        {/* the colored dot */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={DOT_RADIUS}
+          fill={strokeColor}
+          stroke="white"
+          strokeWidth={1}
+        />
+        {/* the sun/moon icon above it */}
+        <g
+          transform={`
+            translate(
+              ${cx - ICON_SIZE / 2},
+              ${cy - ICON_SIZE / 2 - ICON_VERTICAL_OFFSET}
+            )
+          `}
+        >
+          <Icon
+            size={ICON_SIZE}
+            className={isNight ? "text-blue-500" : "text-yellow-500"}
+          />
+        </g>
+      </g>
+    );
+  };
 	// Formatter som visar dag/månad och timme/minut
 	const formatDateTime = (ms: number) =>
 		new Date(ms).toLocaleString("sv-SE", {
@@ -286,20 +342,22 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 									activeDot={false}
 								/>
 
+								{/* “Före” line with custom dots on the top 3 points */}
 								<Line
 									type="monotone"
 									dataKey="usageBefore"
 									stroke="#009E73"
 									strokeWidth={2}
-									dot={false}
+									dot={makePeakDot(originalSet, "#009E73")}
 									name="Före"
 								/>
+								{/* “Efter” line with custom dots on the top 3 points */}
 								<Line
 									type="monotone"
 									dataKey="usageAfter"
 									stroke="#D55E00"
 									strokeWidth={2}
-									dot={false}
+									dot={makePeakDot(afterSet,"#D55E00")}
 									name="Efter"
 								/>
 							</LineChart>

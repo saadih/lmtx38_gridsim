@@ -77,4 +77,6 @@ export interface ProviderStrategy {
 	calculateMetrics(oldData: EnergyData[]): EnergyMetrics;
 	applyRule(data: EnergyData[]): { timestamp: Date; usage: number }[];
 	getTips(): string[];
+	// returns the hours [0–23] that count as “night” for shading 
+  	getNightHours?(): number[];
 }

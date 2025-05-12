@@ -2,6 +2,8 @@ import {EnergyMetrics, EnergyData, TransferLog, ProviderStrategy, StrategyTypes 
 
 const NIGHT_HOURS = [22, 23, 0, 1, 2, 3, 4, 5];
 const Ellevio_rate = 81.25; // SEK/kWh
+
+
 // Applicera Ellevio nattregel (justerar kWh för effektavgift)
 function applyEllevioRule(data : EnergyData[] ) {
 	return data.map(({ timestamp, usage }) => {
@@ -133,5 +135,8 @@ export class EllevioStrategy implements ProviderStrategy {
 			"Utnyttja leverantörsspecifika regler som Ellevios nattjustering.",
 			"https://www.ellevio.se/abonnemang/ny-prismodell-baserad-pa-effekt/#h-sa-kan-du-sanka-dina-effekttoppar"
 		];
+	}
+	getNightHours() {
+		return NIGHT_HOURS;
 	}
 }
