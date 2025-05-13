@@ -44,8 +44,6 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 		usageBefore: original.usage,
 		usageAfter: optimizedSeries[index] ? optimizedSeries[index].usage : null,
 	}));
-	  const nightHours = strategy.getNightHours?.(); // undefined for GE
-
 	const originalTop3 = [...originalSeries]
 		.sort((a, b) => b.usage - a.usage)
 		.slice(0, 3)

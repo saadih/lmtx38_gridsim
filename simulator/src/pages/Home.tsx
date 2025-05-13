@@ -90,7 +90,7 @@ const Home: React.FC = () => {
           Välj leverantör
         </label>
         <Dropdown
-          options={["Ellevio", "GE", "GE - Ny"]}
+          options={["Ellevio", "GE"]}
           value={provider}
           onChange={(v) => setProvider(v as Provider)}
         />
@@ -154,14 +154,6 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          {showResult && (
-            <button
-              onClick={handleReset}
-              className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Ladda upp ny fil
-            </button>
-          )}
         </div>
 
         {isLoading && (
