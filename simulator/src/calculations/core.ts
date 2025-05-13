@@ -17,7 +17,7 @@ export enum StrategyTypes {
 	Top3Peak = "Top-N-optimering: Minska toppar genom att fördela energi från de högsta N posterna."
 }
 
-const providerStrategies: { [key: string]: ProviderStrategy } = {
+export const providerStrategies: { [key: string]: ProviderStrategy } = {
 	Ellevio: new EllevioStrategy(),
 	GE: new GoteborgStrategy(),
 };

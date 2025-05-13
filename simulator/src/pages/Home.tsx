@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as Papa from "papaparse";
 import Result from "./Result";
 import { Dropdown } from "../components/Dropdown";
-import { EnergyData , parseEnergyData } from "../calculations/core";
+import { EnergyData , providerStrategies , parseEnergyData } from "../calculations/core";
 
 const Home: React.FC = () => {
 
@@ -90,8 +90,8 @@ const Home: React.FC = () => {
           Välj leverantör
         </label>
         <Dropdown
-          options={["Ellevio", "GE"]}
-          value={provider}
+            options={Object.keys(providerStrategies)}
+            value={provider}
           onChange={(v) => setProvider(v as Provider)}
         />
       </div>
@@ -118,7 +118,10 @@ const Home: React.FC = () => {
                   {isLoading ? "Bearbetar fil..." : "Välj en CSV-fil"}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Filen ska innehålla tidstämpel och förbrukning separerade med semikolon
+                  Filen ska innehålla tidstämpel och förbrukning separerade med semikolon.
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                Du kan importera din elförbrukning genom att gå på din leverantörs "Mina Sidor"
                 </p>
               </div>
               <input
