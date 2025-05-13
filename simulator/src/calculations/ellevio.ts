@@ -127,12 +127,13 @@ export class EllevioStrategy implements ProviderStrategy {
 	}
 	getTips(): string[] {
 		return [
-			"Ellevio rekommenderar att optimera din energiförbrukning.",
-			"Flytta energiförbrukning till natttimmar för att minska kostnaderna.",
+			"Flytta energiförbrukning till nattetid enligt optimeringen för att minska din effektavgift.",
 			"Identifiera och minimera perioder med hög förbrukning.",
-			"Optimera energifördelningen för att undvika att överskrida kapacitetsgränser.",
-			"Övervaka dina energiförbrukningsmönster regelbundet.",
-			"Utnyttja leverantörsspecifika regler som Ellevios nattjustering.",
+			"Schemalägg tunga laster (tvätt, disk) till lågprisperioder.",
+			"Investera i energieffektiva vitvaror och LED-belysning.",
+			"Sänk värmen med 1-2 °C och ventilera kort men effektivt.",
+			"Koppla ur standby-apparater och använd smarta timers.",
+			"Följ förbrukningen i realtid med en energimonitor.",
 			"https://www.ellevio.se/abonnemang/ny-prismodell-baserad-pa-effekt/#h-sa-kan-du-sanka-dina-effekttoppar"
 		];
 	}

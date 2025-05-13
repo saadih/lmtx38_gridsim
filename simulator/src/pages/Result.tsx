@@ -99,7 +99,8 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 			minute: "2-digit",
 		});
 
-
+	const changePercentage = calculateChangePercentage(
+  		metrics.originalPowerFee || 0, metrics.powerFee);
 	return (
 		<div className="space-y-8">
 			<header className="space-y-2">
@@ -136,7 +137,6 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 				<MetricCard
 					title="Total Förbrukning"
 					value={`${metrics.totalUsage.toFixed(2)} kWh`}
-					description="Totalförbrukning förändras inte vid optimering"
 				/>
 				<MetricCard
 					title="Medeltopp (Efter optimering)"
@@ -181,7 +181,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						}
 						description={
 							provider === "Ellevio"
-								? "* 50% av topparna har flyttats till natttimmar enligt Ellevio"
+								? "* 50% av topparna har flyttats till natttimmar"
 								: undefined
 						}
 					/>
@@ -222,9 +222,17 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						<div className="text-sm text-gray-700">
 							(Före: {metrics.originalPowerFee?.toFixed(2)} SEK)
 						</div>
-						<div className="text-sm text-green-600 mt-1">
-							Besparing {calculateChangePercentage(metrics.originalPowerFee || 0, metrics.powerFee)}
-						</div>
+						{changePercentage && (
+							<div
+								className={`
+								mt-1 text-sm
+								${parseFloat(changePercentage) < 0 ? "text-green-600" : "text-red-600"}
+								`}
+							>
+								{parseFloat(changePercentage) < 0 ? "Besparing " : "Ökning "}
+								{changePercentage.replace("-", "")}
+							</div>	
+						)}
 					</div>
 
 					{/* Box 2: Pris per kWh */}
@@ -237,7 +245,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						</div>
 						{provider === "Ellevio" && (
 							<div className="text-sm text-gray-700 mt-1">
-								Halverad nattförbrukning 22-05
+								Halverad nattförbrukning 22-06
 							</div>
 						)}
 					</div>

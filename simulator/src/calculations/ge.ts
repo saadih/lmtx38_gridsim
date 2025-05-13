@@ -78,12 +78,13 @@ export class GoteborgStrategy implements ProviderStrategy {
 	  }
 	getTips(): string[] {
 		return [
-			"Göteborgs Energi rekommenderar att optimera din energiförbrukning.",
-			"Minska energianvändningen under högbelastningstimmar för att spara kostnader.",
-			"Flytta energikrävande aktiviteter till lågbelastningstimmar.",
-			"Övervaka dina energiförbrukningsmönster regelbundet.",
-			"Överväg att använda energieffektiva apparater.",
-			"Optimera din energianvändning för att sänka effektavgifterna.",
+			"Undvik att köra flera tunga laster (tvätt, disk, spis, ladda elbil) samtidigt för att sprida ut topparna.",
+			"Schemalägg tunga laster till olika dagar eller mellantider med timers eller smartplugs.",
+			"Välj korta och energieffektiva program på dina vitvaror för att hålla effektuttagen låga.",
+			"Logga in på Mitt Göteborg Energi och övervaka dina månadstoppar",
+			"Sänk inomhustemperaturen 1-2 °C när du riskerar toppeffekter och använd smart termostat med veckoprogram.",
+			"Koppla ur standby-apparater och dra nytta av av-/på-grenuttag för att eliminera dolda laster.",
+			"Se över isolering och täta fönster/dörrar så att värmesystemet arbetar jämnare utan onödiga effekttoppar.",
 			"https://www.goteborgenergi.se/privat/elnat/elnatsavgiften#effekt",
 		];
 	}
