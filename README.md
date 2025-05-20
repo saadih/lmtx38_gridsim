@@ -15,7 +15,7 @@ classDiagram
         +render()
     }
     class Home {
-        -provider: "Ellevio" | "GE"
+        -provider: Provider
         -dataRows: EnergyData[]
         -showResult: boolean
         -isLoading: boolean
