@@ -61,6 +61,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 	const DOT_RADIUS = 4;            // size of the peak-dot
 	const makePeakDot =
 	(peakSet: Set<number>, strokeColor: string, Icon: React.FC<{size:number; color?:string;}>) =>
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		({ cx, cy, payload }: any) => {
 	  // only render on top-3 timestamps
 	  if (!peakSet.has(payload.timestamp)) return <g />;
@@ -142,9 +143,9 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 					title="Medeltopp (Efter optimering)"
 					value={
 						<>
-							<span>{metrics.averageTop3.toFixed(2)} kWh</span>
+							<span>{metrics.averageTop3.toFixed(2)} kW</span>
 							<span className="block text-sm text-gray-500">
-								(Före: {metrics.originalAverageTop3?.toFixed(2)} kWh)
+								(Före: {metrics.originalAverageTop3?.toFixed(2)} kW)
 							</span>
 						</>
 					}
@@ -163,10 +164,10 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 										<span>Topp {i + 1}:</span>
 										<div className="flex items-center">
 											<span className="text-gray-500 text-sm line-through mr-2">
-												{metrics.originalTop3Peaks?.[i].toFixed(2)} kWh
+												{metrics.originalTop3Peaks?.[i].toFixed(2)} kW
 											</span>
 											<span className="font-medium">
-												{peak.toFixed(2)} kWh
+												{peak.toFixed(2)} kW
 											</span>
 											<span className="ml-2 text-sm text-green-600">
 												↓{calculateChangePercentage(
@@ -201,7 +202,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 										`${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:00`;
 									return (
 										<li key={i}>
-											{t.amount.toFixed(2)} kWh flyttades från {format(t.from)} till {format(t.to)}.
+											{t.amount.toFixed(2)} kW flyttades från {format(t.from)} till {format(t.to)}.
 										</li>
 									);
 								})}
@@ -209,7 +210,7 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						</div>
 					</div>
 				)}
-				{/* Blåa boxar: Effektavgift + Pris per kWh */}
+				{/* Blåa boxar: Effektavgift + Pris per kW */}
 				<section className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
 					{/* Box 1: Effektavgift */}
 					<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
@@ -235,10 +236,10 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 						)}
 					</div>
 
-					{/* Box 2: Pris per kWh */}
+					{/* Box 2: Pris per kW */}
 					<div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
 						<h4 className="text-sm font-medium text-gray-800 mb-1">
-							Pris per kWh
+							Pris per kW
 						</h4>
 						<div className="text-2xl font-bold text-blue-600">
 							{metrics.rate.toFixed(2)} SEK
@@ -294,32 +295,32 @@ const Result: React.FC<ResultProps> = ({ data, provider }) => {
 									domain={["auto", "auto"]}
 									tick={false}
 								/>
-								<YAxis unit=" kWh" />
+								<YAxis unit=" kW" />
 								<Tooltip
 									labelFormatter={formatDateTime}
-									formatter={(value: number) => `${value.toFixed(2)} kWh`}
+									formatter={(value: number) => `${value.toFixed(2)} kW`}
 								/>
 								<Legend verticalAlign="top" height={36} />
 
 								<ReferenceLine
 									y={metrics.originalAverageTop3}
-									stroke="#E69F00"
+									stroke="rgba(60, 179, 113, 1)"
 									strokeDasharray="3 3"
 									label={{
-										value: `Avg Topp 3 Före: ${(metrics.originalAverageTop3 ?? 0).toFixed(2)} kWh`,
+										value: `Avg Topp 3 Före: ${(metrics.originalAverageTop3 ?? 0).toFixed(2)} kW`,
 										position: "top",
-										fill: "#E69F00",
+										fill: "rgba(60, 179, 113, 1)",
 										fontSize: 12,
 									}}
 								/>
 								<ReferenceLine
 									y={metrics.averageTop3}
-									stroke="#56B4E9"
+									stroke="rgba(255, 99, 71, 1)"
 									strokeDasharray="3 3"
 									label={{
-										value: `Avg Topp 3 Efter: ${metrics.averageTop3.toFixed(2)} kWh`,
+										value: `Avg Topp 3 Efter: ${metrics.averageTop3.toFixed(2)} kW`,
 										position: "top",
-										fill: "#56B4E9",
+										fill: "rgba(255, 99, 71, 1)",
 										fontSize: 12,
 									}}
 								/>
