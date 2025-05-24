@@ -69,13 +69,7 @@ const Home: React.FC = () => {
       header: false,
     });
   };
-
-  const handleReset = () => {
-    setDataRows([]);
-    setShowResult(false);
-    setError(null);
-  };
-
+  
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <header className="text-center mb-8">
