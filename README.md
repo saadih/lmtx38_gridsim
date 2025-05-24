@@ -3,6 +3,10 @@ Grid collective Simulator
 
 Gjort med React + TypeScript + Vite
 
+För att se hemsidan lokalt
+cd simulator
+npm run preview
+
 ## UML
 # Component Architecture
 
