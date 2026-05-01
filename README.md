@@ -4,7 +4,7 @@ An interactive web application that simulates and optimizes household energy con
 
 ## The Problem
 
-Swedish grid operators like Ellevio and Goteborgs Energi have shifted from flat-rate billing to **power-based tariffs**, where customers are charged based on their top 3 peak consumption hours per month rather than total kWh. This means a few hours of heavy usage can dramatically increase your monthly bill, even if total consumption stays the same.
+Swedish grid operators like Ellevio and Göteborgs Energi have shifted from flat-rate billing to **power-based tariffs**, where customers are charged based on their top 3 peak consumption hours per month rather than total kWh. This means a few hours of heavy usage can dramatically increase your monthly bill, even if total consumption stays the same.
 
 This project explores how much money households could save by intelligently **redistributing** their energy consumption, shifting peaks to low-demand periods without changing total energy use.
 
