@@ -1,6 +1,6 @@
-# Grid Collective Simulator (LMTX38 Thesis Project)
+# Grid Collective Simulator
 
-A master's thesis project from Chalmers University of Technology. An interactive web application that simulates and optimizes household energy consumption under different Swedish grid providers' pricing models, specifically focused on **power-based tariffs** (effektavgift).
+An interactive web application that simulates and optimizes household energy consumption under different Swedish grid providers' pricing models, specifically focused on **power-based tariffs** (effektavgift). Developed as a bachelor's thesis project for LMTX38 at Chalmers University of Technology.
 
 ## The Problem
 
@@ -126,14 +126,52 @@ lmtx38_gridsim/
 └── README.md
 ```
 
-## Academic Context
+## Component Architecture
 
-**Course:** LMTX38 -- Master's Thesis at Chalmers University of Technology.
+```mermaid
+classDiagram
+    class App {
+        +render()
+    }
+    class Home {
+        -provider: Provider
+        -dataRows: EnergyData[]
+        -showResult: boolean
+        -isLoading: boolean
+        -error: string | null
+        +handleFileUpload(event: ChangeEvent)
+        +handleReset()
+        +render()
+    }
+    class Dropdown {
+        +options: string[]
+        +value: string
+        +onChange(v: string)
+        +render()
+    }
+    class Result {
+        -isMaximized: boolean
+        -strategy: ProviderStrategy
+        -metrics: EnergyMetrics
+        -tips: string[]
+        +calculateChangePercentage(orig: number, opt: number): string
+        +render()
+    }
+    class MetricCard {
+        +title: string
+        +value: ReactNode
+        +description?: string
+        +highlight?: boolean
+        +changePercentage?: string
+        +render()
+    }
 
-**Research question:** How much can Swedish households reduce their grid fees under power-based tariff models by redistributing their existing energy consumption patterns, without changing total consumption?
-
-**Methodology:** Upload real household consumption data, apply multiple optimization strategies, compare resulting peak values and calculated fees across different provider pricing models. The strategy pattern enables clean comparison of algorithms under identical conditions.
+    App --> Home : contains
+    Home --> Dropdown : uses
+    Home --> Result : uses
+    Result --> MetricCard : composes
+```
 
 ## License
 
-This project was developed for academic purposes as part of a master's thesis at Chalmers University of Technology.
+This project was developed as a bachelor's thesis project at Chalmers University of Technology.
