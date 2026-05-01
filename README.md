@@ -1,6 +1,6 @@
 # Grid Collective Simulator
 
-An interactive web application that simulates and optimizes household energy consumption under different Swedish grid providers' pricing models, specifically focused on **power-based tariffs** (effektavgift). Developed as a bachelor's thesis project for LMTX38 at Chalmers University of Technology.
+An interactive web application that simulates and optimizes household energy consumption under different Swedish grid providers' pricing models, specifically focused on **power-based tariffs** (effektavgift). Developed as a bachelor's thesis project for LMTX38 at Chalmers University of Technology, in collaboration with Grid Collective AB.
 
 ## The Problem
 
@@ -174,4 +174,4 @@ classDiagram
 
 ## License
 
-This project was developed as a bachelor's thesis project at Chalmers University of Technology.
+This project was developed as a bachelor's thesis project at Chalmers University of Technology, in collaboration with Grid Collective AB.
